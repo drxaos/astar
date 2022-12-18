@@ -71,9 +71,20 @@ public class Explorer {
 
         // nearest waiting
         if (explore == null || !waiting.contains(explore)) {
+            // fast choose
+            for (Point lookup : LOOKUP) {
+                Point testNear = current.add(lookup);
+                if (waiting.contains(testNear)) {
+                    explore = testNear;
+                }
+            }
+            // slow choose
             DijkstraFinder<Point> finder = new DijkstraFinder<>(new Graph<>(map), gridScorer);
             explore = waiting.stream().min(Comparator.comparing(p -> {
                 List<Point> route = finder.findRoute(current, p);
+                if (route.isEmpty()) {
+                    throw new RuntimeException("wat");
+                }
                 return gridScorer.computeCost(route);
             })).orElse(null);
         }

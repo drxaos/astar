@@ -12,9 +12,10 @@ class DijkstraGraph<T> {
         graph = new HashMap<>(edges.size());
 
         //one pass to find all vertices
+        int id = 0;
         for (DijkstraEdge<T> e : edges) {
-            if (!graph.containsKey(e.v1)) graph.put(e.v1, new DijkstraVertex<T>(e.v1));
-            if (!graph.containsKey(e.v2)) graph.put(e.v2, new DijkstraVertex<T>(e.v2));
+            if (!graph.containsKey(e.v1)) graph.put(e.v1, new DijkstraVertex<T>(id++, e.v1));
+            if (!graph.containsKey(e.v2)) graph.put(e.v2, new DijkstraVertex<T>(id++, e.v2));
         }
 
         //another pass to set neighbouring vertices
@@ -38,7 +39,7 @@ class DijkstraGraph<T> {
         // set-up vertices
         for (DijkstraVertex<T> v : graph.values()) {
             v.previous = v == source ? source : null;
-            v.dist = v == source ? 0 : Integer.MAX_VALUE;
+            v.dist = v == source ? 0.0 : Double.POSITIVE_INFINITY;
             q.add(v);
         }
 
@@ -53,7 +54,7 @@ class DijkstraGraph<T> {
         while (!q.isEmpty()) {
 
             u = q.pollFirst(); // vertex with shortest distance (first iteration will return source)
-            if (u.dist == Integer.MAX_VALUE)
+            if (u.dist == Double.POSITIVE_INFINITY)
                 break; // we can ignore u (and any other remaining vertices) since they are unreachable
 
             //look at distances to each neighbour
