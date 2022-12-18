@@ -1,6 +1,7 @@
 package org.example.explorer;
 
 import org.example.astar.AStarFinder;
+import org.example.dijkstra.DijkstraFinder;
 import org.example.grid.GridScorer;
 import org.example.grid.Point;
 import org.example.search.Graph;
@@ -69,9 +70,12 @@ public class Explorer {
         waiting.forEach(p -> maze.markPlan(p));
 
         // nearest waiting
-        Point nearest = waiting.stream().min(Comparator.comparing(p -> gridScorer.computeCost(current, p))).orElse(null);
         if (explore == null || !waiting.contains(explore)) {
-            explore = nearest;
+            DijkstraFinder<Point> finder = new DijkstraFinder<>(new Graph<>(map), gridScorer);
+            explore = waiting.stream().min(Comparator.comparing(p -> {
+                List<Point> route = finder.findRoute(current, p);
+                return gridScorer.computeCost(route);
+            })).orElse(null);
         }
 
         if (explore == null) {
@@ -81,17 +85,9 @@ public class Explorer {
 
             AStarFinder<Point> finder = new AStarFinder<>(new Graph<>(map), gridScorer, gridScorer);
             List<Point> route = finder.findRoute(current, explore);
-            AStarFinder<Point> finder2 = new AStarFinder<>(new Graph<>(map), gridScorer, gridScorer);
-            List<Point> route2 = finder.findRoute(current, nearest);
             if (route.size() >= 2) {
                 Point step = route.get(1);
                 maze.move(step.x() - current.x(), step.y() - current.y());
-
-                Point step2 = route2.get(1);
-                if (step.equals(step2)) {
-                    replaced = true;
-                    explore = nearest;
-                }
             } else {
                 explore = null;
             }

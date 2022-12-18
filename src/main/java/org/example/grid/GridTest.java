@@ -37,7 +37,6 @@ public class GridTest {
 
             DijkstraFinder<Point> finder = new DijkstraFinder<>(
                     new Graph<>(map),
-                    new GridScorer(),
                     new GridScorer()
             );
 
@@ -73,7 +72,6 @@ public class GridTest {
 
             DijkstraFinder<Point> finder = new DijkstraFinder<>(
                     new Graph<>(map),
-                    new GridScorer(),
                     new GridScorer()
             );
 

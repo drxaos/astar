@@ -11,15 +11,20 @@ import java.util.List;
 public class DijkstraFinder<T> {
     private final org.example.search.Graph<T> graph;
     private final Scorer<T> nextNodeScorer;
-    private final Scorer<T> targetScorer;
+
+    DijkstraGraph<T> g;
+    T from;
 
     public List<T> findRoute(T from, T to) {
-        List<DijkstraEdge<T>> edges = graph.getConnections().entrySet().stream()
-                .flatMap(e -> e.getValue().stream()
-                        .map(t -> new DijkstraEdge<T>(e.getKey(), t, nextNodeScorer.computeCost(e.getKey(), t))))
-                .toList();
-        DijkstraGraph<T> g = new DijkstraGraph<>(edges);
-        g.dijkstra(from);
+        if (this.from != from) {
+            List<DijkstraEdge<T>> edges = graph.getConnections().entrySet().stream()
+                    .flatMap(e -> e.getValue().stream()
+                            .map(t -> new DijkstraEdge<T>(e.getKey(), t, nextNodeScorer.computeCost(e.getKey(), t))))
+                    .toList();
+            g = new DijkstraGraph<>(edges);
+            g.dijkstra(from);
+            this.from = from;
+        }
         return g.getPath(to);
     }
 }

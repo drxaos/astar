@@ -16,8 +16,7 @@ public class DijkstraTest {
                         "E", Set.of("B", "D"),
                         "F", Set.of("D")
                 )),
-                (from, to) -> 1,
-                (from, to) -> to.charAt(0) - from.charAt(0)
+                (from, to) -> 1
         );
 
         System.out.println(finder.findRoute("A", "F"));
