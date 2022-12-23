@@ -71,7 +71,7 @@ public class DsTest {
 
                 final var bagsFinal = bags;
                 final var clustersFinal = clusters;
-                final List<Child> cluster50 = clustersQueue.remove(0);
+                final List<Child> cluster50 = clustersQueue.remove(clustersQueue.size() - 1);
 
                 notMarked.remove(current);
                 marked.add(current);
@@ -121,20 +121,20 @@ public class DsTest {
                     g.drawLine(c.getChild().x() / 10, c.getChild().y() / 10, p.x() / 10, p.y() / 10);
                 });
             });
-//            debugClusters.forEach((c, ps) -> {
-//                Graphics2D g = (Graphics2D) img.getGraphics();
-//                g.setColor(Color.MAGENTA);
-//                ps.forEach(p -> {
-//                    g.drawLine(c.getChild().x() / 10, c.getChild().y() / 10, p.x() / 10, p.y() / 10);
-//                });
-//            });
-//            debugFurtherClusters.forEach((c, ps) -> {
-//                Graphics2D g = (Graphics2D) img.getGraphics();
-//                g.setColor(Color.PINK);
-//                ps.forEach(p -> {
-//                    g.drawLine(c.getChild().x() / 10, c.getChild().y() / 10, p.x() / 10, p.y() / 10);
-//                });
-//            });
+            //            debugClusters.forEach((c, ps) -> {
+            //                Graphics2D g = (Graphics2D) img.getGraphics();
+            //                g.setColor(Color.MAGENTA);
+            //                ps.forEach(p -> {
+            //                    g.drawLine(c.getChild().x() / 10, c.getChild().y() / 10, p.x() / 10, p.y() / 10);
+            //                });
+            //            });
+            //            debugFurtherClusters.forEach((c, ps) -> {
+            //                Graphics2D g = (Graphics2D) img.getGraphics();
+            //                g.setColor(Color.PINK);
+            //                ps.forEach(p -> {
+            //                    g.drawLine(c.getChild().x() / 10, c.getChild().y() / 10, p.x() / 10, p.y() / 10);
+            //                });
+            //            });
 
             {
                 Graphics2D g = (Graphics2D) img.getGraphics();

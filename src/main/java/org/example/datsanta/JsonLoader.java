@@ -29,9 +29,10 @@ public class JsonLoader {
         children.add(new Child(0, 0));
 
         dsMap.snowAreas().forEach(snowArea -> {
-            for (int i = 0; i < 100; i++) {
-                final int x = snowArea.x() + (int) ((snowArea.r() + 2) * Math.cos(2 * Math.PI * i / 100));
-                final int y = snowArea.y() + (int) ((snowArea.r() + 2) * Math.sin(2 * Math.PI * i / 100));
+            // 1000/(cos(pi/50))=1001.97717
+            for (int i = 0; i < 50; i++) {
+                final int x = snowArea.x() + (int) ((snowArea.r() + 3) * Math.cos(2 * Math.PI * i / 50));
+                final int y = snowArea.y() + (int) ((snowArea.r() + 3) * Math.sin(2 * Math.PI * i / 50));
                 if (x >= 0 && x < 10000 && y >= 0 && y < 10000) {
                     children.add(new Child(x, y));
                 }
