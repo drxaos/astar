@@ -41,6 +41,12 @@ public class KMeans {
      */
     public static Map<Centroid, List<Child>> fit(List<Child> records, List<List<Gift>> bags, int k, Scorer<Child> distance, int maxIterations) {
 
+        final Child zero = new Child(0, 0);
+        final ChildScorer childScorer = new ChildScorer();
+        records = records.stream().sorted(Comparator.comparing(c -> {
+            return -childScorer.computeCost(c, zero);
+        })).toList();
+
         List<Centroid> centroids = randomCentroids(records, k);
         Map<Centroid, List<Child>> clusters = new HashMap<>();
         Map<Centroid, List<Child>> lastState = new HashMap<>();
@@ -49,14 +55,16 @@ public class KMeans {
         for (int i = 0; i < maxIterations; i++) {
             boolean isLastIteration = i == maxIterations - 1;
 
-            final Child zero = new Child(0, 0);
-            final ChildScorer childScorer = new ChildScorer();
-            final List<Centroid> sortedCentroids = centroids.stream().sorted(Comparator.comparing(c -> {
-                return -childScorer.computeCost(c.getChild(), zero);
-            })).toList();
-            for (int j = 0; j < sortedCentroids.size(); j++) {
-                sortedCentroids.get(j).setCount(bags.get(j).size());
-            }
+            //            final List<Centroid> sortedCentroids = centroids.stream().sorted(Comparator.comparing(c -> {
+            //                return -childScorer.computeCost(c.getChild(), zero);
+            //            })).toList();
+            //            for (int j = 0; j < sortedCentroids.size(); j++) {
+            //                sortedCentroids.get(j).setCount(bags.get(j).size());
+            //            }
+            //
+            //            final List<Centroid> sortedCentroidsReverse = centroids.stream().sorted(Comparator.comparing(c -> {
+            //                return childScorer.computeCost(c.getChild(), zero);
+            //            })).toList();
 
             // in each iteration we should find the nearest centroid for each record
             for (Child record : records) {
@@ -75,6 +83,66 @@ public class KMeans {
             centroids = relocateCentroids(clusters);
             clusters = new HashMap<>();
         }
+
+        final List<Centroid> sortedCentroids = centroids.stream().sorted(Comparator.comparing(c -> {
+            return -childScorer.computeCost(c.getChild(), zero);
+        })).toList();
+        final List<Child> furtherCluster = lastState.get(sortedCentroids.get(0));
+        final int targetCount = bags.get(0).size();
+        sortedCentroids.get(0).setCount(targetCount);
+        if (furtherCluster.size() < targetCount) {
+            final ArrayList<Child> processingRecords = new ArrayList<>(records);
+            processingRecords.removeAll(furtherCluster);
+            while (furtherCluster.size() < targetCount) {
+                Child record = nearestRecord(sortedCentroids.get(0), processingRecords, distance);
+                processingRecords.remove(record);
+                assignToCluster(lastState, record, sortedCentroids.get(0));
+            }
+        } else if (furtherCluster.size() > targetCount) {
+            while (furtherCluster.size() > targetCount) {
+                Child record = nearestRecord(new Child(0, 0), furtherCluster, distance);
+                furtherCluster.remove(record);
+            }
+        }
+        //
+        //        clusters = new HashMap<>();
+        //
+        //        for (int i = 0; i < maxIterations; i++) {
+        //            boolean isLastIteration = i == maxIterations - 1;
+        //
+        //            final List<Centroid> sortedCentroids = centroids.stream().sorted(Comparator.comparing(c -> {
+        //                return -childScorer.computeCost(c.getChild(), zero);
+        //            })).toList();
+        ////            for (int j = 0; j < sortedCentroids.size(); j++) {
+        ////                sortedCentroids.get(j).setCount(bags.get(j).size());
+        ////            }
+        //            sortedCentroids.get(0).setCount(bags.get(0).size());
+        //
+        ////            final List<Centroid> sortedCentroidsReverse = centroids.stream().sorted(Comparator.comparing(c -> {
+        ////                return childScorer.computeCost(c.getChild(), zero);
+        ////            })).toList();
+        //
+        //            // in each iteration we should find the nearest centroid for each record
+        //            final ArrayList<Child> processingRecords = new ArrayList<>(records);
+        //            for (Centroid centroid : sortedCentroids) {
+        //                for (int j = 0; j < centroid.getCount(); j++) {
+        //                    Child record = nearestRecord(clusters, centroid, processingRecords, distance);
+        //                    processingRecords.remove(record);
+        //                    assignToCluster(clusters, record, centroid);
+        //                }
+        //            }
+        //
+        //            // if the assignment does not change, then the algorithm terminates
+        //            boolean shouldTerminate = isLastIteration || clusters.equals(lastState);
+        //            lastState = clusters;
+        //            if (shouldTerminate) {
+        //                break;
+        //            }
+        //
+        //            // at the end of each iteration we should relocate the centroids
+        //            centroids = relocateCentroids(clusters);
+        //            clusters = new HashMap<>();
+        //        }
 
         return lastState;
     }
@@ -169,13 +237,49 @@ public class KMeans {
         Centroid nearest = null;
 
         for (Centroid centroid : centroids) {
-            if (clusters.getOrDefault(centroid, List.of()).size() > centroid.getCount() - 1) {continue;}
+            //if (clusters.getOrDefault(centroid, List.of()).size() > centroid.getCount() - 1) {continue;}
 
             double currentDistance = distance.computeCost(record, centroid.getChild());
 
             if (currentDistance < minimumDistance) {
                 minimumDistance = currentDistance;
                 nearest = centroid;
+            }
+        }
+
+        return nearest;
+    }
+
+    private static Child nearestRecord(Centroid centroid, List<Child> records, Scorer<Child> distance) {
+        double minimumDistance = Double.MAX_VALUE;
+        Child nearest = null;
+
+        for (Child record : records) {
+            //if (clusters.getOrDefault(centroid, List.of()).size() > centroid.getCount() - 1) {continue;}
+
+            double currentDistance = distance.computeCost(record, centroid.getChild());
+
+            if (currentDistance < minimumDistance) {
+                minimumDistance = currentDistance;
+                nearest = record;
+            }
+        }
+
+        return nearest;
+    }
+
+    private static Child nearestRecord(Child centroid, List<Child> records, Scorer<Child> distance) {
+        double minimumDistance = Double.MAX_VALUE;
+        Child nearest = null;
+
+        for (Child record : records) {
+            //if (clusters.getOrDefault(centroid, List.of()).size() > centroid.getCount() - 1) {continue;}
+
+            double currentDistance = distance.computeCost(record, centroid);
+
+            if (currentDistance < minimumDistance) {
+                minimumDistance = currentDistance;
+                nearest = record;
             }
         }
 

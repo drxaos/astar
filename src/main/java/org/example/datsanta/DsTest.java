@@ -9,6 +9,7 @@ import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,8 +33,32 @@ public class DsTest {
                 childScorer
         );
 
-        final Map<Centroid, List<Child>> clusters = KMeans.fit(loader.dsMap.children(), bags, bags.size(), childScorer, 1000);
-        final ArrayList<List<Child>> clustersQueue = new ArrayList<>(clusters.values().stream().sorted(Comparator.comparing(List::size)).toList());
+        final Map<Centroid, List<Child>> clusters = new HashMap<>();
+        final Map<Centroid, List<Child>> debugClusters = new HashMap<>();
+        final Map<Centroid, List<Child>> debugFurtherClusters = new HashMap<>();
+        final ArrayList<List<Child>> clustersQueue = new ArrayList<>();
+        //        final ForkJoinPool forkJoinPool1 = new ForkJoinPool(12);
+        //        final ForkJoinTask<?> task1 = forkJoinPool1.submit(() -> {
+        final ArrayList<Child> processingPoints = new ArrayList<>(loader.dsMap.children());
+        while (!processingPoints.isEmpty()) {
+            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints, bags, bags.size() * 2, childScorer, 50);
+            debugClusters.clear();
+            debugClusters.putAll(clustersIteration);
+            final Map.Entry<Centroid, List<Child>> furtherCluster = clustersIteration.entrySet()
+                    .stream()
+                    .max(Comparator.comparing((Map.Entry<Centroid, List<Child>> t) -> childScorer.computeCost(
+                            t.getKey().getChild(),
+                            new Child(0, 0)
+                    )))
+                    .get();
+            debugFurtherClusters.clear();
+            debugFurtherClusters.put(furtherCluster.getKey(), furtherCluster.getValue());
+            clustersQueue.add(furtherCluster.getValue());
+            processingPoints.removeAll(furtherCluster.getValue());
+            bags.remove(0);
+            clusters.put(furtherCluster.getKey(), furtherCluster.getValue());
+        }
+        //        });
 
         final TreeSet<Child> notMarked = new TreeSet<>(loader.getDsMap().children());
         final List<Child> marked = new ArrayList<>();
@@ -43,6 +68,9 @@ public class DsTest {
             Child current = new Child(0, 0);
             while (!notMarked.isEmpty()) {
                 Child finalCurrent1 = current;
+
+                final var bagsFinal = bags;
+                final var clustersFinal = clusters;
                 final List<Child> cluster50 = clustersQueue.remove(0);
 
                 notMarked.remove(current);
@@ -65,8 +93,9 @@ public class DsTest {
                     System.out.println("next " + marked.size());
                 }
 
+                final List<Child> route = finder.findRoute(current, new Child(0, 0));
+                marked.addAll(route);
                 current = new Child(0, 0);
-                marked.add(current);
             }
         });
 
@@ -92,6 +121,20 @@ public class DsTest {
                     g.drawLine(c.getChild().x() / 10, c.getChild().y() / 10, p.x() / 10, p.y() / 10);
                 });
             });
+//            debugClusters.forEach((c, ps) -> {
+//                Graphics2D g = (Graphics2D) img.getGraphics();
+//                g.setColor(Color.MAGENTA);
+//                ps.forEach(p -> {
+//                    g.drawLine(c.getChild().x() / 10, c.getChild().y() / 10, p.x() / 10, p.y() / 10);
+//                });
+//            });
+//            debugFurtherClusters.forEach((c, ps) -> {
+//                Graphics2D g = (Graphics2D) img.getGraphics();
+//                g.setColor(Color.PINK);
+//                ps.forEach(p -> {
+//                    g.drawLine(c.getChild().x() / 10, c.getChild().y() / 10, p.x() / 10, p.y() / 10);
+//                });
+//            });
 
             {
                 Graphics2D g = (Graphics2D) img.getGraphics();

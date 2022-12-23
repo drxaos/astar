@@ -8,7 +8,7 @@ import java.util.List;
 
 public class Collector {
 
-    public static List<List<Gift>> collectGifts(DsMap resp) throws Exception {
+    public static List<List<Gift>> collectGifts(DsMap resp)  {
         //        HttpHeaders headers = new HttpHeaders();
         //        headers.add("X-API-Key", "90a75999-2d77-41d9-aa22-26a85571da53");
         //        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
@@ -39,7 +39,7 @@ public class Collector {
                 .sum();
         System.out.println(we); //200 -> 40 по весу
         System.out.println(vo); //100 -> 46 по объему
-        System.out.println(new ObjectMapper().writeValueAsString(gifts));
+        //System.out.println(new ObjectMapper().writeValueAsString(gifts));
 
         List<List<Gift>> result = new ArrayList<>();
         result.add(new ArrayList<>());
@@ -63,7 +63,7 @@ public class Collector {
 
         result.sort(Comparator.comparing(List::size, Comparator.reverseOrder()));
 
-        System.out.println(new ObjectMapper().writeValueAsString(result));
+        //System.out.println(new ObjectMapper().writeValueAsString(result));
 
         System.out.println(result.size());
         int count = 0;
