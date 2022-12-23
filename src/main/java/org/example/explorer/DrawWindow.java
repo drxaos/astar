@@ -11,7 +11,7 @@ public class DrawWindow extends JPanel {
 
     public DrawWindow() {
         frame = new JFrame("TEST");
-        frame.setSize(400, 250);
+        frame.setSize(500, 500);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //frame.getContentPane().add(main.panel);
         frame.getContentPane().add(this);
@@ -20,7 +20,7 @@ public class DrawWindow extends JPanel {
 
     public void setImg(BufferedImage img) {
         this.img = img;
-        this.setPreferredSize(new Dimension(img.getWidth() * 15, img.getHeight() * 15));
+        this.setPreferredSize(new Dimension(img.getWidth() , img.getHeight() ));
         frame.pack();
         this.repaint();
     }
@@ -29,7 +29,7 @@ public class DrawWindow extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         if (img != null) {
-            g.drawImage(img, 0, 0, img.getWidth() * 15, img.getHeight() * 15, null);
+            g.drawImage(img, 0, 0, img.getWidth() , img.getHeight() , null);
         }
     }
 }

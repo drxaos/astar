@@ -17,7 +17,7 @@ public class AStarFinder<T> {
     private final Scorer<T> targetScorer;
 
     public List<T> findRoute(T from, T to) {
-        Map<T, AStarNode<T>> allNodes = new HashMap<>();
+        Map<T, AStarNode<T>> allNodes = new HashMap<>(4096);
         Queue<AStarNode<T>> openSet = new PriorityQueue<>();
 
         AStarNode<T> start = new AStarNode<>(from, null, 0d, targetScorer.computeCost(from, to));
@@ -25,11 +25,11 @@ public class AStarFinder<T> {
         openSet.add(start);
 
         while (!openSet.isEmpty()) {
-            log.debug("Open Set contains: " + openSet.stream().map(AStarNode::getCurrent).collect(Collectors.toSet()));
+            //log.debug("Open Set contains: " + openSet.stream().map(AStarNode::getCurrent).collect(Collectors.toSet()));
             AStarNode<T> next = openSet.poll();
-            log.debug("Looking at node: " + next);
+            //log.debug("Looking at node: " + next);
             if (next.getCurrent().equals(to)) {
-                log.debug("Found our destination!");
+                //log.debug("Found our destination!");
 
                 List<T> route = new ArrayList<>();
                 AStarNode<T> current = next;
@@ -38,7 +38,7 @@ public class AStarFinder<T> {
                     current = allNodes.get(current.getPrevious());
                 } while (current != null);
 
-                log.debug("Route: " + route);
+                //log.debug("Route: " + route);
                 return route;
             }
 
@@ -52,7 +52,7 @@ public class AStarFinder<T> {
                     nextNode.setRouteScore(newScore);
                     nextNode.setEstimatedScore(newScore + targetScorer.computeCost(connection, to));
                     openSet.add(nextNode);
-                    log.debug("Found a better route to node: " + nextNode);
+                    //log.debug("Found a better route to node: " + nextNode);
                 }
             });
         }
