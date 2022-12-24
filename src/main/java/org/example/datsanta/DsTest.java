@@ -8,15 +8,9 @@ import org.example.search.Graph;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class DsTest {
     public static void main(String[] args) throws Exception {
@@ -41,7 +35,7 @@ public class DsTest {
         final Map<Centroid, List<Child>> clusters = new HashMap<>();
         final Map<Centroid, List<Child>> debugClusters = new HashMap<>();
         final Map<Centroid, List<Child>> debugFurtherClusters = new HashMap<>();
-        final ArrayList<List<Child>> clustersQueue = new ArrayList<>();
+        final ArrayList<Map.Entry<Centroid, List<Child>>> clustersQueue = new ArrayList<>();
         //        final ForkJoinPool forkJoinPool1 = new ForkJoinPool(12);
         //        final ForkJoinTask<?> task1 = forkJoinPool1.submit(() -> {
         final ArrayList<Child> processingPoints = new ArrayList<>(loader.dsMap.children());
@@ -58,51 +52,86 @@ public class DsTest {
                     .get();
             debugFurtherClusters.clear();
             debugFurtherClusters.put(furtherCluster.getKey(), furtherCluster.getValue());
-            clustersQueue.add(furtherCluster.getValue());
+            clustersQueue.add(furtherCluster);
             processingPoints.removeAll(furtherCluster.getValue());
             bags.remove(0);
-            clusters.put(furtherCluster.getKey(), furtherCluster.getValue());
+            clusters.put(furtherCluster.getKey(), new ArrayList<>(furtherCluster.getValue()));
         }
         //        });
 
-        final TreeSet<Child> notMarked = new TreeSet<>(loader.getDsMap().children());
-        final List<Child> marked = new ArrayList<>();
+        Child zero = new Child(0, 0);
+        final ConcurrentSkipListSet<Child> notMarked = new ConcurrentSkipListSet<>(loader.getDsMap().children());
+        final List<Child> resultPath = new ArrayList<>();
 
-        final ForkJoinPool forkJoinPool = new ForkJoinPool(12);
-        final ForkJoinTask<?> task = forkJoinPool.submit(() -> {
-            Child current = new Child(0, 0);
-            while (!notMarked.isEmpty()) {
-                Child finalCurrent1 = current;
+        ExecutorService executorService = Executors.newFixedThreadPool(12);
+        List<Future<List<Child>>> tasks = new ArrayList<>();
+        {
 
-                final var bagsFinal = bags;
-                final var clustersFinal = clusters;
-                final List<Child> cluster50 = clustersQueue.remove(clustersQueue.size() - 1);
+            while (!clustersQueue.isEmpty()) {
 
-                notMarked.remove(current);
-                marked.add(current);
+                Map.Entry<Centroid, List<Child>> cluster50entry = clustersQueue.remove(clustersQueue.size() - 1);
+                List<Child> cluster50 = cluster50entry.getValue();
 
-                while (!cluster50.isEmpty()) {
-                    Child finalCurrent = current;
-                    final List<Child> nearest10 = cluster50.parallelStream().sorted(Comparator.comparing(p -> {
-                        return childScorer.computeCost(finalCurrent, p);
-                    })).limit(10).toList();
-                    final Child nearest = nearest10.parallelStream().min(Comparator.comparing(p -> {
-                        final List<Child> route = finder.findRoute(finalCurrent, p);
-                        return circleLineScorer.computeCost(route);
-                    })).orElse(null);
-                    final List<Child> route = finder.findRoute(finalCurrent, nearest);
-                    notMarked.remove(nearest);
-                    cluster50.remove(nearest);
-                    marked.addAll(route);
-                    current = nearest;
-                    System.out.println("next " + marked.size());
-                }
+                cluster50.add(0, zero);
 
-                final List<Child> route = finder.findRoute(current, new Child(0, 0));
-                marked.addAll(route);
-                current = new Child(0, 0);
+                notMarked.remove(zero);
+                tasks.add(executorService.submit(() ->
+                {
+                    final List<Child> clusterMarked = new ArrayList<>();
+                    clusterMarked.add(zero);
+
+                    int[][] matrix = new int[cluster50.size()][cluster50.size()];
+                    for (int i = 0; i < cluster50.size(); i++) {
+                        for (int j = 0; j < cluster50.size(); j++) {
+                            final List<Child> route = finder.findRoute(cluster50.get(i), cluster50.get(j));
+                            double cost = circleLineScorer.computeCost(route);
+                            matrix[i][j] = (int) cost;
+                        }
+                    }
+                    ArrayList<Child> geneticPath = GeneticSearch.runSearch(cluster50, matrix);
+
+
+                    Child current = new Child(0, 0);
+                    while (!cluster50.isEmpty()) {
+                        //Child finalCurrent = current;
+//                    final List<Child> nearest10 = cluster50.parallelStream().sorted(Comparator.comparing(p -> {
+//                        return childScorer.computeCost(finalCurrent, p);
+//                    })).limit(10).toList();
+//                    final Child nearest = nearest10.parallelStream().min(Comparator.comparing(p -> {
+//                        final List<Child> route = finder.findRoute(finalCurrent, p);
+//                        return circleLineScorer.computeCost(route);
+//                    })).orElse(null);
+                        Child nearest = geneticPath.remove(0);
+                        final List<Child> route = finder.findRoute(current, nearest);
+                        notMarked.remove(nearest);
+                        cluster50.remove(nearest);
+                        clusterMarked.addAll(route);
+                        current = nearest;
+                        //System.out.println("next " + marked.size());
+                    }
+
+//                    final List<Child> route = finder.findRoute(current, new Child(0, 0));
+//                    clusterMarked.addAll(route);
+//                    current = new Child(0, 0);
+
+                    clusters.put(cluster50entry.getKey(), clusterMarked);
+
+                    return clusterMarked;
+                }));
+
+
             }
-        });
+        }
+
+        Executors.newSingleThreadExecutor().submit(() ->
+                tasks.forEach(t -> {
+                    try {
+                        List<Child> path = t.get();
+                        resultPath.addAll(path);
+                    } catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }));
 
         DrawWindow drawWindow = new DrawWindow();
         final BufferedImage img = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_RGB);
@@ -127,8 +156,15 @@ public class DsTest {
             });
 
             clusters.forEach((c, ps) -> {
-                g.setColor(Color.DARK_GRAY);
+                if (childScorer.computeCost(drawWindow.getMovePoint(), c.getChild()) < 600) {
+                    g.setColor(Color.GRAY);
+                } else {
+                    g.setColor(Color.DARK_GRAY);
+                }
                 ps.forEach(p -> {
+                    if (p.equals(zero)) {
+                        return;
+                    }
                     g.drawLine(
                             (int) (c.getChild().x() / scale - shiftX),
                             (int) (c.getChild().y() / scale - shiftY),
@@ -152,10 +188,13 @@ public class DsTest {
             //            });
 
             {
-                g.setColor(Color.YELLOW);
-                for (int i = 0; i < marked.size() - 1; i++) {
-                    final Child from = marked.get(i);
-                    final Child to = marked.get(i + 1);
+                g.setColor(Color.ORANGE.darker().darker());
+                for (int i = 0; i < resultPath.size() - 1; i++) {
+                    final Child from = resultPath.get(i);
+                    final Child to = resultPath.get(i + 1);
+//                    if (from.equals(zero) || to.equals(zero)) {
+//                        continue;
+//                    }
                     g.drawLine(
                             (int) (from.x() / scale - shiftX),
                             (int) (from.y() / scale - shiftY),
@@ -163,6 +202,22 @@ public class DsTest {
                             (int) (to.y() / scale - shiftY));
                 }
             }
+            clusters.forEach((c, ps) -> {
+                if (childScorer.computeCost(drawWindow.getMovePoint(), c.getChild()) < 600) {
+                    g.setColor(Color.YELLOW);
+                } else {
+                    return;
+                }
+                for (int i = 0; i < ps.size() - 1; i++) {
+                    final Child from = ps.get(i);
+                    final Child to = ps.get(i + 1);
+                    g.drawLine(
+                            (int) (from.x() / scale - shiftX),
+                            (int) (from.y() / scale - shiftY),
+                            (int) (to.x() / scale - shiftX),
+                            (int) (to.y() / scale - shiftY));
+                }
+            });
             nodes.keySet().forEach(n -> {
                 try {
                     img.setRGB(

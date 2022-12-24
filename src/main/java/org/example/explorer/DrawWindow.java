@@ -1,6 +1,7 @@
 package org.example.explorer;
 
 import lombok.Getter;
+import org.example.datsanta.Child;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,6 +17,8 @@ public class DrawWindow extends JPanel {
     @Getter
     double scale = 10;
     Point pressPoint;
+    @Getter
+    Child movePoint = new Child(0, 0);
 
     public DrawWindow() {
         frame = new JFrame("TEST");
@@ -77,6 +80,11 @@ public class DrawWindow extends JPanel {
             center.x = (int) (center.x - dx * scale);
             center.y = (int) (center.y - dy * scale);
             pressPoint = e.getPoint();
+        }
+
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            movePoint = new Child((int) (e.getPoint().x * scale + center.x), (int) (e.getPoint().y * scale + center.y));
         }
     }
 }
