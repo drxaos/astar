@@ -2,13 +2,7 @@ package org.example.datsanta;
 
 import org.example.search.Scorer;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -143,7 +137,8 @@ public class KMeans {
         //            centroids = relocateCentroids(clusters);
         //            clusters = new HashMap<>();
         //        }
-
+//        Map<Centroid, List<Child>> result = relocateCentroidsFinal(lastState);
+//        return result;
         return lastState;
     }
 
@@ -161,6 +156,14 @@ public class KMeans {
                 .collect(toList());
     }
 
+    private static Map<Centroid, List<Child>> relocateCentroidsFinal(Map<Centroid, List<Child>> clusters) {
+        Map<Centroid, List<Child>> result = new HashMap<>();
+        clusters.forEach((k, v) -> {
+            result.put(average(k, v), v);
+        });
+        return result;
+    }
+
     /**
      * Moves the given centroid to the average position of all assigned features. If
      * the centroid has no feature in its cluster, then there would be no need for a
@@ -172,7 +175,7 @@ public class KMeans {
      * @param records  The assigned features.
      * @return The moved centroid.
      */
-    private static Centroid average(Centroid centroid, List<Child> records) {
+    public static Centroid average(Centroid centroid, List<Child> records) {
         // if this cluster is empty, then we shouldn't move the centroid
         if (records == null || records.isEmpty()) {
             return centroid;

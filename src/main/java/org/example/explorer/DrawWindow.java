@@ -55,7 +55,7 @@ public class DrawWindow extends JPanel {
             int y = e.getY();
             int width = ((DrawWindow) e.getSource()).getWidth();
             int height = ((DrawWindow) e.getSource()).getHeight();
-            System.out.println("wheel " + units + ", x " + x + ", y" + y);
+            //System.out.println("wheel " + units + ", x " + x + ", y" + y);
 
             double mapX = x * scale + center.x;
             center.x = (int) (mapX - x * newScale);

@@ -1,5 +1,7 @@
 package org.example.datsanta;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Map;
 
 public record Child(
@@ -8,8 +10,12 @@ public record Child(
 ) implements Comparable<Child> {
     @Override
     public boolean equals(Object o) {
-        if (this == o) {return true;}
-        if (o == null || getClass() != o.getClass()) {return false;}
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Child child = (Child) o;
         return x == child.x && y == child.y;
     }
@@ -28,6 +34,7 @@ public record Child(
         return result;
     }
 
+    @JsonIgnore
     public Map<String, Double> getFeatures() {
         return Map.of("x", (double) x, "y", (double) y);
     }

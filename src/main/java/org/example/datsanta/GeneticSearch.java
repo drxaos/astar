@@ -31,7 +31,7 @@ public class GeneticSearch {
         generationSize = 5000;
         reproductionSize = 200;
         maxIterations = 2000;
-        mutationRate = 0.3f;
+        mutationRate = 0.2f;
         tournamentSize = 40;
     }
 

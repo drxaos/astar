@@ -9,20 +9,6 @@ import java.util.List;
 public class Collector {
 
     public static List<List<Gift>> collectGifts(DsMap resp)  {
-        //        HttpHeaders headers = new HttpHeaders();
-        //        headers.add("X-API-Key", "90a75999-2d77-41d9-aa22-26a85571da53");
-        //        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
-        //        HttpEntity<String> entity = new HttpEntity<>(null, headers);
-        //        final ResponseEntity<String> exchange = new RestTemplate()
-        //                .exchange(
-        //                        new URI("https://datsanta.dats.team/json/map/faf7ef78-41b3-4a36-8423-688a61929c08.json"),
-        //                        HttpMethod.GET,
-        //                        entity,
-        //                        String.class
-        //                );
-
-        //        final DsMap resp = new ObjectMapper().readValue(exchange.getBidy(), DsMap.class);
-        //        doWork(new int[]{3, 4, 5, 8, 9}, new int[]{1, 6, 4, 7, 6});
 
         final List<Gift> gifts = resp.gifts();
 
