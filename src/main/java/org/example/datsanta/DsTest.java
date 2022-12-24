@@ -14,7 +14,10 @@ import java.util.concurrent.*;
 
 public class DsTest {
     public static void main(String[] args) throws Exception {
+//        MapGenerator generator = new MapGenerator();
         JsonLoader loader = new JsonLoader();
+//        loader.load(generator.generate());
+
         loader.load("src/main/java/org/example/datsanta/faf7ef78-41b3-4a36-8423-688a61929c08.json");
         final Map<Child, Set<Child>> nodes = loader.toNodes();
 

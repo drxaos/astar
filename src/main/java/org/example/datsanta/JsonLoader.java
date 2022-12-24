@@ -22,6 +22,10 @@ public class JsonLoader {
         }
     }
 
+    public void load(DsMap dsMap) {
+        this.dsMap = dsMap;
+    }
+
     public Map<Child, Set<Child>> toNodes() {
         final Map<Child, Set<Child>> result = new HashMap<>();
 
