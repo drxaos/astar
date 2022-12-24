@@ -8,23 +8,23 @@ import java.util.List;
 
 public class Collector {
 
-    public static List<List<Gift>> collectGifts(DsMap resp)  {
+    public static List<List<Gift>> collectGifts(DsMap resp) {
 
         final List<Gift> gifts = resp.gifts();
 
-        gifts.sort(Comparator.comparing(Gift::volume, Comparator.reverseOrder())
-                .thenComparing(Comparator.comparing(Gift::weight, Comparator.reverseOrder())));
+        gifts.sort(Comparator.comparing(Gift::volume)
+                .thenComparing(Gift::weight));
 
-        final int we = gifts.stream()
-                .map(Gift::weight)
-                .mapToInt(e -> e)
-                .sum();
-        final int vo = gifts.stream()
-                .map(Gift::volume)
-                .mapToInt(e -> e)
-                .sum();
-        System.out.println(we); //200 -> 40 по весу
-        System.out.println(vo); //100 -> 46 по объему
+//        final int we = gifts.stream()
+//                .map(Gift::weight)
+//                .mapToInt(e -> e)
+//                .sum();
+//        final int vo = gifts.stream()
+//                .map(Gift::volume)
+//                .mapToInt(e -> e)
+//                .sum();
+//        System.out.println(we); //200 -> 40 по весу
+//        System.out.println(vo); //100 -> 46 по объему
         //System.out.println(new ObjectMapper().writeValueAsString(gifts));
 
         List<List<Gift>> result = new ArrayList<>();
@@ -51,9 +51,8 @@ public class Collector {
 
         //System.out.println(new ObjectMapper().writeValueAsString(result));
 
-        System.out.println(result.size());
-        int count = 0;
-        System.out.println(count);
+        System.out.println("bags " + result.size() + ": " + result.stream().map(List::size).toList());
+
         return result;
     }
 }

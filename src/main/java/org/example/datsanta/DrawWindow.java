@@ -1,7 +1,6 @@
-package org.example.explorer;
+package org.example.datsanta;
 
 import lombok.Getter;
-import org.example.datsanta.Child;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,9 +15,16 @@ public class DrawWindow extends JPanel {
     Point center = new Point(0, 0);
     @Getter
     double scale = 10;
-    Point pressPoint;
+    Point windowPressPoint;
     @Getter
     Child movePoint = new Child(0, 0);
+    Child dblClick = null;
+
+    public Child getDblClick() {
+        Child dblClick1 = dblClick;
+        dblClick = null;
+        return dblClick1;
+    }
 
     public DrawWindow() {
         frame = new JFrame("TEST");
@@ -68,23 +74,30 @@ public class DrawWindow extends JPanel {
     public class MousePressListener extends MouseAdapter {
         @Override
         public void mousePressed(MouseEvent e) {
-            pressPoint = e.getPoint();
+            windowPressPoint = e.getPoint();
+        }
+
+        public void mouseClicked(MouseEvent e) {
+            if (e.getClickCount() == 2 && e.getButton() == MouseEvent.BUTTON1) {
+                dblClick = new Child((int) (e.getPoint().x * scale + center.x), (int) (e.getPoint().y * scale + center.y));
+            }
         }
     }
 
     public class MouseDragListener extends MouseMotionAdapter {
         @Override
         public void mouseDragged(MouseEvent e) {
-            int dx = e.getX() - pressPoint.x;
-            int dy = e.getY() - pressPoint.y;
+            int dx = e.getX() - windowPressPoint.x;
+            int dy = e.getY() - windowPressPoint.y;
             center.x = (int) (center.x - dx * scale);
             center.y = (int) (center.y - dy * scale);
-            pressPoint = e.getPoint();
+            windowPressPoint = e.getPoint();
         }
 
         @Override
         public void mouseMoved(MouseEvent e) {
             movePoint = new Child((int) (e.getPoint().x * scale + center.x), (int) (e.getPoint().y * scale + center.y));
+            frame.setTitle("Point " + movePoint.x() + " : " + movePoint.y());
         }
     }
 }

@@ -19,7 +19,7 @@ public class CircleLineScorer implements Scorer<Child> {
         this.snowAreaList = snowAreaList;
     }
 
-    public static List<Child> getCircleLineIntersectionChild(
+    public static List<ChildDouble> getCircleLineIntersectionChild(
             Child pointA,
             Child pointB, Child center, double radius
     ) {
@@ -44,32 +44,21 @@ public class CircleLineScorer implements Scorer<Child> {
         double abScalingFactor1 = -pBy2 + tmpSqrt;
         double abScalingFactor2 = -pBy2 - tmpSqrt;
 
-        Child p1 = new Child((int) (pointA.x() - baX * abScalingFactor1), (int) (pointA.y() - baY * abScalingFactor1));
+        ChildDouble p1 = new ChildDouble((pointA.x() - baX * abScalingFactor1), (pointA.y() - baY * abScalingFactor1));
         if (disc == 0) { // abScalingFactor1 == abScalingFactor2
             return Collections.singletonList(p1);
         }
-        Child p2 = new Child((int) (pointA.x() - baX * abScalingFactor2), (int) (pointA.y() - baY * abScalingFactor2));
+        ChildDouble p2 = new ChildDouble((pointA.x() - baX * abScalingFactor2), (pointA.y() - baY * abScalingFactor2));
         return Arrays.asList(p1, p2);
     }
 
-    public static void main(String[] args) {
-
-        final List<Child> qwe = getIntersection(
-                new Child(-10, -10),
-                new Child(-100, -110),
-                new Child(0, 0),
-                3
-        );
-        System.out.println(qwe);
-    }
-
-    public static List<Child> getIntersection(
+    public static List<ChildDouble> getIntersection(
             Child pointA,
             Child pointB,
             Child center,
             double radius
     ) {
-        final List<Child> points = getCircleLineIntersectionChild(
+        final List<ChildDouble> points = getCircleLineIntersectionChild(
                 pointA, pointB, center, radius
         );
 
@@ -77,18 +66,18 @@ public class CircleLineScorer implements Scorer<Child> {
             return List.of();
         }
 
-        List<Child> result = new ArrayList<>();
+        List<ChildDouble> result = new ArrayList<>();
 
-        final Child point1 = points.get(0);
+        final ChildDouble point1 = points.get(0);
         addIfInside(pointA, pointB, result, point1);
 
-        final Child point2 = points.get(1);
+        final ChildDouble point2 = points.get(1);
         addIfInside(pointA, pointB, result, point2);
 
         return result;
     }
 
-    private static void addIfInside(final Child pointA, final Child pointB, final List<Child> result, final Child point1) {
+    private static void addIfInside(final Child pointA, final Child pointB, final List<ChildDouble> result, final ChildDouble point1) {
         if (point1.x() >= Math.min(pointA.x(), pointB.x()) && point1.x() <= Math.max(pointA.x(), pointB.x())) {
             if (point1.y() >= Math.min(pointA.y(), pointB.y()) && point1.y() <= Math.max(pointA.y(), pointB.y())) {
                 result.add(point1);
@@ -97,8 +86,8 @@ public class CircleLineScorer implements Scorer<Child> {
     }
 
     public static double distance(
-            Child pointA,
-            Child pointB
+            ChildDouble pointA,
+            ChildDouble pointB
     ) {
         return Math.sqrt(Math.pow(pointA.x() - pointB.x(), 2) + Math.pow(pointA.y() - pointB.y(), 2));
     }
@@ -109,23 +98,23 @@ public class CircleLineScorer implements Scorer<Child> {
             Child center,
             double radius
     ) {
-        final List<Child> intersections = getIntersection(pointA, pointB, center, radius);
+        final List<ChildDouble> intersections = getIntersection(pointA, pointB, center, radius);
         if (intersections.size() == 2) {
-            final Child p1 = intersections.get(0);
-            final Child p2 = intersections.get(1);
+            final ChildDouble p1 = intersections.get(0);
+            final ChildDouble p2 = intersections.get(1);
             return distance(p1, p2) * 6;
         } else if (intersections.isEmpty()) {
-            if (distance(center, pointA) <= radius) {
-                return distance(pointA, pointB) * 6;
+            if (distance(ChildDouble.from(center), ChildDouble.from(pointA)) <= radius) {
+                return distance(ChildDouble.from(pointA), ChildDouble.from(pointB)) * 6;
             } else {
                 return 0;
             }
         } else {
-            final Child p1 = intersections.get(0);
-            if (distance(center, pointA) <= radius) {
-                return distance(pointA, p1) * 6;
+            final ChildDouble p1 = intersections.get(0);
+            if (distance(ChildDouble.from(center), ChildDouble.from(pointA)) <= radius) {
+                return distance(ChildDouble.from(pointA), p1) * 6;
             } else {
-                return distance(pointB, p1) * 6;
+                return distance(ChildDouble.from(pointB), p1) * 6;
             }
         }
     }
@@ -136,7 +125,7 @@ public class CircleLineScorer implements Scorer<Child> {
             List<SnowArea> circles
     ) {
         final double insideCost = circles.stream().map(c -> getInsideCost(pointA, pointB, new Child(c.x(), c.y()), c.r())).mapToDouble(r -> r).sum();
-        final double outsideCost = distance(pointA, pointB);
+        final double outsideCost = distance(ChildDouble.from(pointA), ChildDouble.from(pointB));
         return insideCost + outsideCost;
     }
 

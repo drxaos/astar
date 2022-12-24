@@ -1,5 +1,6 @@
 package org.example.explorer;
 
+import org.example.datsanta.DrawWindow;
 import org.example.grid.PngLoader;
 
 public class ExplorerTest {

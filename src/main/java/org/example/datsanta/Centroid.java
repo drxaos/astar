@@ -1,5 +1,9 @@
 package org.example.datsanta;
 
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -13,6 +17,18 @@ public class Centroid {
      */
     private final Map<String, Double> coordinates;
     int count;
+    @Getter
+    @Setter
+    Integer clIndex;
+    @Getter
+    @Setter
+    int[][] matrix;
+    @Getter
+    @Setter
+    List<Child> originalCluster;
+    @Getter
+    @Setter
+    boolean selfIntersecting;
 
     public Centroid(Map<String, Double> coordinates) {
         this.coordinates = coordinates;
