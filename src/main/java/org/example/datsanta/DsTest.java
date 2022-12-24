@@ -18,7 +18,13 @@ public class DsTest {
         loader.load("src/main/java/org/example/datsanta/faf7ef78-41b3-4a36-8423-688a61929c08.json");
         final Map<Child, Set<Child>> nodes = loader.toNodes();
 
+        long startTime = System.currentTimeMillis();
+
         final List<List<Gift>> bags = Collector.collectGifts(loader.getDsMap());
+
+        long bagsTime = System.currentTimeMillis();
+        System.out.println("bagsTime: " + (bagsTime - startTime));
+
 
         final ChildScorer childScorer = new ChildScorer();
         final CircleLineScorer circleLineScorer = new CircleLineScorer(loader.getDsMap().snowAreas());
@@ -26,10 +32,6 @@ public class DsTest {
                 new Graph<>(nodes),
                 circleLineScorer,
                 childScorer
-        );
-        DijkstraFinder<Child> finderDijkstra = new DijkstraFinder<>(
-                new Graph<>(nodes),
-                circleLineScorer
         );
 
         final Map<Centroid, List<Child>> clusters = new HashMap<>();
@@ -59,6 +61,10 @@ public class DsTest {
         }
         //        });
 
+        long kmeanTime = System.currentTimeMillis();
+        System.out.println("kmeanTime: " + (kmeanTime - bagsTime));
+
+
         Child zero = new Child(0, 0);
         final ConcurrentSkipListSet<Child> notMarked = new ConcurrentSkipListSet<>(loader.getDsMap().children());
         final List<Child> resultPath = new ArrayList<>();
@@ -77,6 +83,8 @@ public class DsTest {
                 notMarked.remove(zero);
                 tasks.add(executorService.submit(() ->
                 {
+                    long startClusterGeneticTime = System.currentTimeMillis();
+
                     final List<Child> clusterMarked = new ArrayList<>();
                     clusterMarked.add(zero);
 
@@ -91,7 +99,7 @@ public class DsTest {
                     ArrayList<Child> geneticPath = GeneticSearch.runSearch(cluster50, matrix);
 
 
-                    Child current = new Child(0, 0);
+                    Child current = geneticPath.remove(0);
                     while (!cluster50.isEmpty()) {
                         //Child finalCurrent = current;
 //                    final List<Child> nearest10 = cluster50.parallelStream().sorted(Comparator.comparing(p -> {
@@ -116,6 +124,9 @@ public class DsTest {
 
                     clusters.put(cluster50entry.getKey(), clusterMarked);
 
+                    long endClusterGeneticTime = System.currentTimeMillis();
+                    System.out.println("singleClusterTime: " + (endClusterGeneticTime - startClusterGeneticTime));
+
                     return clusterMarked;
                 }));
 
@@ -123,15 +134,21 @@ public class DsTest {
             }
         }
 
-        Executors.newSingleThreadExecutor().submit(() ->
-                tasks.forEach(t -> {
-                    try {
-                        List<Child> path = t.get();
-                        resultPath.addAll(path);
-                    } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-                }));
+        Executors.newSingleThreadExecutor().submit(() -> {
+            tasks.forEach(t -> {
+                try {
+                    List<Child> path = t.get();
+                    resultPath.addAll(path);
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            long geneticTime = System.currentTimeMillis();
+            System.out.println("geneticTime: " + (geneticTime - kmeanTime));
+
+            System.out.println("fullTime: " + (geneticTime - startTime));
+        });
 
         DrawWindow drawWindow = new DrawWindow();
         final BufferedImage img = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_RGB);
@@ -159,7 +176,7 @@ public class DsTest {
                 if (childScorer.computeCost(drawWindow.getMovePoint(), c.getChild()) < 600) {
                     g.setColor(Color.GRAY);
                 } else {
-                    g.setColor(Color.DARK_GRAY);
+                    g.setColor(Color.DARK_GRAY.darker().darker());
                 }
                 ps.forEach(p -> {
                     if (p.equals(zero)) {
@@ -188,7 +205,7 @@ public class DsTest {
             //            });
 
             {
-                g.setColor(Color.ORANGE.darker().darker());
+                g.setColor(Color.ORANGE.darker().darker().darker().darker());
                 for (int i = 0; i < resultPath.size() - 1; i++) {
                     final Child from = resultPath.get(i);
                     final Child to = resultPath.get(i + 1);
@@ -229,10 +246,17 @@ public class DsTest {
             });
             loader.getDsMap().children().forEach(child -> {
                 try {
-                    img.setRGB(
-                            (int) (child.x() / scale - shiftX),
-                            (int) (child.y() / scale - shiftY),
-                            0xFF0000);
+                    g.setColor(Color.RED);
+                    g.drawOval(
+                            (int) (child.x() / scale - shiftX) - 1,
+                            (int) (child.y() / scale - shiftY) - 1,
+                            3,
+                            3
+                    );
+//                    img.setRGB(
+//                            (int) (child.x() / scale - shiftX),
+//                            (int) (child.y() / scale - shiftY),
+//                            0xFF0000);
                 } catch (Exception ignore) {
                 }
             });

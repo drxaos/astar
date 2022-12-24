@@ -26,10 +26,10 @@ public class GeneticSearch {
         this.startingCity = startingCity;
         this.targetFitness = targetFitness;
 
-        generationSize = 4000;
+        generationSize = 5000;
         reproductionSize = 200;
-        maxIterations = 800;
-        mutationRate = 0.2f;
+        maxIterations = 2000;
+        mutationRate = 0.3f;
         tournamentSize = 40;
     }
 
@@ -180,17 +180,18 @@ public class GeneticSearch {
         int numberOfCities = nodes.size();
         int[][] travelPrices = matrix;
 
-        printTravelPrices(travelPrices, numberOfCities);
+        //printTravelPrices(travelPrices, numberOfCities);
 
         GeneticSearch geneticAlgorithm = new GeneticSearch(numberOfCities, GeneticSelectionType.TOURNAMENT, travelPrices, 0, 0);
         GeneticGenome result = geneticAlgorithm.optimize();
-        System.out.println(result);
+        //System.out.println(result);
 
-        GeneticSearch geneticAlgorithm2 = new GeneticSearch(numberOfCities, GeneticSelectionType.TOURNAMENT, travelPrices, 0, 0);
-        GeneticGenome result2 = geneticAlgorithm2.optimize();
-        System.out.println(result2);
+//        GeneticSearch geneticAlgorithm2 = new GeneticSearch(numberOfCities, GeneticSelectionType.TOURNAMENT, travelPrices, 0, 0);
+//        GeneticGenome result2 = geneticAlgorithm2.optimize();
+//        System.out.println(result2);
 
-        List<Integer> genome = result.fitness < result2.fitness ? result.genome : result2.genome;
+//        List<Integer> genome = result.fitness < result2.fitness ? result.genome : result2.genome;
+        List<Integer> genome = result.genome;
 
         ArrayList<Child> path = new ArrayList<>();
         path.add(nodes.get(0));
