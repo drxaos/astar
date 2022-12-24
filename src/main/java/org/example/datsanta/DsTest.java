@@ -1,6 +1,7 @@
 package org.example.datsanta;
 
 import org.example.astar.AStarFinder;
+import org.example.dijkstra.DijkstraFinder;
 import org.example.explorer.DrawWindow;
 import org.example.search.Graph;
 
@@ -32,6 +33,10 @@ public class DsTest {
                 circleLineScorer,
                 childScorer
         );
+        DijkstraFinder<Child> finderDijkstra = new DijkstraFinder<>(
+                new Graph<>(nodes),
+                circleLineScorer
+        );
 
         final Map<Centroid, List<Child>> clusters = new HashMap<>();
         final Map<Centroid, List<Child>> debugClusters = new HashMap<>();
@@ -41,7 +46,7 @@ public class DsTest {
         //        final ForkJoinTask<?> task1 = forkJoinPool1.submit(() -> {
         final ArrayList<Child> processingPoints = new ArrayList<>(loader.dsMap.children());
         while (!processingPoints.isEmpty()) {
-            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints, bags, bags.size() * 2, childScorer, 50);
+            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints, bags, bags.size() * 3 / 2, childScorer, 50);
             debugClusters.clear();
             debugClusters.putAll(clustersIteration);
             final Map.Entry<Centroid, List<Child>> furtherCluster = clustersIteration.entrySet()
@@ -100,25 +105,35 @@ public class DsTest {
         });
 
         DrawWindow drawWindow = new DrawWindow();
+        final BufferedImage img = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_RGB);
         while (true) {
-            final BufferedImage img = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = (Graphics2D) img.getGraphics();
+            g.setBackground(new Color(0, 0, 0, 0));
+            g.clearRect(0, 0, img.getWidth(), img.getHeight());
+
+            double scale = drawWindow.getScale();
+            double shiftX = drawWindow.getCenter().x / scale;
+            double shiftY = drawWindow.getCenter().y / scale;
+
             loader.dsMap.snowAreas().forEach(snowArea -> {
-                Graphics2D g = (Graphics2D) img.getGraphics();
                 Shape theCircle = new Ellipse2D.Double(
-                        (snowArea.x() - snowArea.r()) / 10,
-                        (snowArea.y() - snowArea.r()) / 10,
-                        (snowArea.r() * 2) / 10,
-                        (snowArea.r() * 2) / 10
+                        (snowArea.x() - snowArea.r()) / scale - shiftX,
+                        (snowArea.y() - snowArea.r()) / scale - shiftY,
+                        (snowArea.r() * 2) / scale,
+                        (snowArea.r() * 2) / scale
                 );
                 g.setColor(Color.BLUE);
                 g.draw(theCircle);
             });
 
             clusters.forEach((c, ps) -> {
-                Graphics2D g = (Graphics2D) img.getGraphics();
                 g.setColor(Color.DARK_GRAY);
                 ps.forEach(p -> {
-                    g.drawLine(c.getChild().x() / 10, c.getChild().y() / 10, p.x() / 10, p.y() / 10);
+                    g.drawLine(
+                            (int) (c.getChild().x() / scale - shiftX),
+                            (int) (c.getChild().y() / scale - shiftY),
+                            (int) (p.x() / scale - shiftX),
+                            (int) (p.y() / scale - shiftY));
                 });
             });
             //            debugClusters.forEach((c, ps) -> {
@@ -137,23 +152,38 @@ public class DsTest {
             //            });
 
             {
-                Graphics2D g = (Graphics2D) img.getGraphics();
                 g.setColor(Color.YELLOW);
                 for (int i = 0; i < marked.size() - 1; i++) {
                     final Child from = marked.get(i);
                     final Child to = marked.get(i + 1);
-                    g.drawLine(from.x() / 10, from.y() / 10, to.x() / 10, to.y() / 10);
+                    g.drawLine(
+                            (int) (from.x() / scale - shiftX),
+                            (int) (from.y() / scale - shiftY),
+                            (int) (to.x() / scale - shiftX),
+                            (int) (to.y() / scale - shiftY));
                 }
             }
             nodes.keySet().forEach(n -> {
-                img.setRGB(n.x() / 10, n.y() / 10, 0x00FF00);
+                try {
+                    img.setRGB(
+                            (int) (n.x() / scale - shiftX),
+                            (int) (n.y() / scale - shiftY),
+                            0x00FF00);
+                } catch (Exception ignore) {
+                }
             });
             loader.getDsMap().children().forEach(child -> {
-                img.setRGB(child.x() / 10, child.y() / 10, 0xFF0000);
+                try {
+                    img.setRGB(
+                            (int) (child.x() / scale - shiftX),
+                            (int) (child.y() / scale - shiftY),
+                            0xFF0000);
+                } catch (Exception ignore) {
+                }
             });
 
             drawWindow.setImg(img);
-            Thread.sleep(150);
+            Thread.sleep(15);
         }
     }
 }
