@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
 
 public class DsTest {
     public static void main(String[] args) throws Exception {
@@ -68,6 +67,10 @@ public class DsTest {
                 childScorer
         );
 
+
+        Scorer<Child> kMeanScorer = childScorer;
+
+
         final Map<Centroid, List<Child>> clusters = new HashMap<>();
         final Map<Centroid, List<Child>> debugClusters = new HashMap<>();
         final Map<Centroid, List<Child>> debugFurtherClusters = new HashMap<>();
@@ -78,7 +81,7 @@ public class DsTest {
         while (!processingPoints.isEmpty()) {
             int targetSize = bags.get(0).size();
             int k = processingPoints.size() / targetSize;
-            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints, bags, k, childScorer, 100);
+            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints, bags, k, kMeanScorer, childScorer, 100);
             debugClusters.clear();
             debugClusters.putAll(clustersIteration);
             final Map.Entry<Centroid, List<Child>> furtherCluster = clustersIteration.entrySet()
@@ -88,6 +91,9 @@ public class DsTest {
                             new Child(0, 0)
                     )))
                     .get();
+            if (furtherCluster.getValue().size() != targetSize) {
+                throw new RuntimeException("wrong cluster size");
+            }
             debugFurtherClusters.clear();
             debugFurtherClusters.put(furtherCluster.getKey(), furtherCluster.getValue());
 //            clustersQueue.add(Map.entry(KMeans.average(furtherCluster.getKey(), furtherCluster.getValue()), furtherCluster.getValue()));
@@ -98,7 +104,6 @@ public class DsTest {
         //        });
 
         // fix clusters
-        Scorer<Child> fixClustersScorer = childScorer;
         if (true)
             for (Map.Entry<Centroid, List<Child>> c1 : clustersQueue) {
                 for (Map.Entry<Centroid, List<Child>> c2 : clustersQueue) {
@@ -108,8 +113,8 @@ public class DsTest {
 
                     TreeMap<Double, Child> c1Candidates = new TreeMap<>();
                     for (Child p : c1.getValue()) {
-                        double toC1 = fixClustersScorer.computeCost(c1.getKey().getChild(), p);
-                        double toC2 = fixClustersScorer.computeCost(c2.getKey().getChild(), p);
+                        double toC1 = kMeanScorer.computeCost(c1.getKey().getChild(), p);
+                        double toC2 = kMeanScorer.computeCost(c2.getKey().getChild(), p);
                         if (toC1 > toC2) {
                             c1Candidates.put(-toC1, p);
                         }
@@ -117,8 +122,8 @@ public class DsTest {
 
                     TreeMap<Double, Child> c2Candidates = new TreeMap<>();
                     for (Child p : c2.getValue()) {
-                        double toC1 = fixClustersScorer.computeCost(c1.getKey().getChild(), p);
-                        double toC2 = fixClustersScorer.computeCost(c2.getKey().getChild(), p);
+                        double toC1 = kMeanScorer.computeCost(c1.getKey().getChild(), p);
+                        double toC2 = kMeanScorer.computeCost(c2.getKey().getChild(), p);
                         if (toC2 > toC1) {
                             c2Candidates.put(-toC2, p);
                         }
@@ -150,10 +155,13 @@ public class DsTest {
         final ConcurrentSkipListSet<Child> notMarked = new ConcurrentSkipListSet<>(loader.getDsMap().children());
         final List<Child> resultPath = new ArrayList<>();
 
-        ExecutorService geneticExecutor = Executors.newFixedThreadPool(12);
-        ExecutorService executor = Executors.newFixedThreadPool(12);
+        var geneticScorer = circleLineScorer;
+
+        ExecutorService geneticExecutor = Executors.newFixedThreadPool(20);
+        ExecutorService executor = Executors.newFixedThreadPool(20);
         List<Future<List<Child>>> tasks = new ArrayList<>();
         if (true) {
+            AtomicInteger clusterIndex = new AtomicInteger();
 
             while (!clustersQueue.isEmpty()) {
 
@@ -162,7 +170,6 @@ public class DsTest {
 
                 cluster50.add(0, zero);
 
-                AtomicInteger clusterIndex = new AtomicInteger();
                 notMarked.remove(zero);
                 tasks.add(executor.submit(() ->
                 {
@@ -176,12 +183,14 @@ public class DsTest {
                     for (int i = 0; i < cluster50.size(); i++) {
                         for (int j = 0; j < cluster50.size(); j++) {
                             final List<Child> route = finder.findRoute(cluster50.get(i), cluster50.get(j));
-                            double cost = circleLineScorer.computeCost(route);
+                            double cost = geneticScorer.computeCost(route);
                             matrix[i][j] = (int) cost;
                         }
                     }
-                    List<Future<ArrayList<Child>>> geneticTasks = IntStream.range(0, 3)
-                            .mapToObj(n -> geneticExecutor.submit(() -> GeneticSearch.runSearch(cluster50, matrix))).toList();
+                    List<Future<ArrayList<Child>>> geneticTasks = new ArrayList<>();
+                    geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(cluster50, matrix, 5000, 200, 1000, 0.2f, 40)));
+                    geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(cluster50, matrix, 3000, 300, 3000, 0.3f, 30)));
+                    geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(cluster50, matrix, 8000, 100, 500, 0.1f, 50)));
 
                     List<ArrayList<Child>> geneticResults = new ArrayList<>();
                     for (Future<ArrayList<Child>> geneticTask : geneticTasks) {
@@ -189,7 +198,7 @@ public class DsTest {
                         geneticResults.add(children);
                     }
                     ArrayList<Child> geneticPath = geneticResults.stream()
-                            .min(Comparator.comparing(circleLineScorer::computeCost)).get();
+                            .min(Comparator.comparing(geneticScorer::computeCost)).get();
 
                     Child current = geneticPath.remove(0);
                     while (!cluster50.isEmpty()) {
@@ -199,7 +208,7 @@ public class DsTest {
 //                    })).limit(10).toList();
 //                    final Child nearest = nearest10.parallelStream().min(Comparator.comparing(p -> {
 //                        final List<Child> route = finder.findRoute(finalCurrent, p);
-//                        return circleLineScorer.computeCost(route);
+//                        return geneticScorer.computeCost(route);
 //                    })).orElse(null);
                         Child nearest = geneticPath.remove(0);
                         final List<Child> route = finder.findRoute(current, nearest);
@@ -253,6 +262,9 @@ public class DsTest {
 
             double fullLength = childScorer.computeCost(deduplicated);
             System.out.println("fullLength " + fullLength);
+            double fullCost = circleLineScorer.computeCost(deduplicated);
+            System.out.println("fullCost " + fullCost);
+
             DsResult dsResult = new DsResult(
                     mapId,
                     deduplicated,
@@ -261,7 +273,8 @@ public class DsTest {
 
             try {
                 String resultJson = new ObjectMapper().writeValueAsString(dsResult);
-                Files.write(Paths.get("" + mapId + "_result_" + System.currentTimeMillis() + ".json"), resultJson.getBytes());
+                Files.write(Paths.get("" + mapId + "_result_" + System.currentTimeMillis() + "_len_" + (int) fullLength + "_cost_" + (int) fullCost + ".json"), resultJson.getBytes());
+                System.out.println("done");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

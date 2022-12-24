@@ -21,7 +21,7 @@ public class KMeans {
     /**
      * Will be used to generate random numbers.
      */
-    private static final Random random = new Random(123456789);
+    private static final Random random = new Random();
 
     /**
      * Performs the K-Means clustering algorithm on the given dataset.
@@ -30,10 +30,18 @@ public class KMeans {
      * @param bags
      * @param k             Number of Clusters.
      * @param distance      To calculate the distance between two items.
+     * @param childScorer
      * @param maxIterations Upper bound for the number of iterations.
      * @return K clusters along with their features.
      */
-    public static Map<Centroid, List<Child>> fit(List<Child> records, List<List<Gift>> bags, int k, Scorer<Child> distance, int maxIterations) {
+    public static Map<Centroid, List<Child>> fit(
+            List<Child> records,
+            List<List<Gift>> bags,
+            int k,
+            Scorer<Child> distance,
+            ChildScorer directDistance,
+            int maxIterations
+    ) {
 
         final Child zero = new Child(0, 0);
         final ChildScorer childScorer = new ChildScorer();
@@ -94,7 +102,7 @@ public class KMeans {
             }
         } else if (furtherCluster.size() > targetCount) {
             while (furtherCluster.size() > targetCount) {
-                Child record = nearestRecord(new Child(0, 0), furtherCluster, distance);
+                Child record = nearestRecord(new Child(0, 0), furtherCluster, directDistance);
                 furtherCluster.remove(record);
             }
         }

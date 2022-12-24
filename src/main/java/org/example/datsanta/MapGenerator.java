@@ -39,11 +39,11 @@ public class MapGenerator {
 
         for (int i = 0; i < GIFT_COUNT; i++) {
             result.add(
-                new Gift(
-                    i,
-                    generateRandomInt(GIFT_MIN_W, GIFT_MAX_W),
-                    generateRandomInt(GIFT_MIN_V, GIFT_MAX_V)
-                )
+                    new Gift(
+                            i,
+                            generateRandomInt(GIFT_MIN_W, GIFT_MAX_W),
+                            generateRandomInt(GIFT_MIN_V, GIFT_MAX_V)
+                    )
             );
         }
 
@@ -55,10 +55,10 @@ public class MapGenerator {
 
         for (int i = 0; i < CHILD_COUNT; i++) {
             result.add(
-                new Child(
-                    generateRandomInt(1, MAX_MAP_X),
-                    generateRandomInt(1, MAX_MAP_Y)
-                )
+                    new Child(
+                            generateRandomInt(1, MAX_MAP_X),
+                            generateRandomInt(1, MAX_MAP_Y)
+                    )
             );
         }
 
@@ -67,15 +67,26 @@ public class MapGenerator {
 
     private List<SnowArea> generateSnowAreas() {
         List<SnowArea> result = new ArrayList<>();
+        SnowAreaScorer snowAreaScorer = new SnowAreaScorer();
 
         for (int i = 0; i < SNOW_AREA_COUNT; i++) {
-            result.add(
-                new SnowArea(
-                    generateRandomInt(SNOW_AREA_MIN_R, SNOW_AREA_MAX_R),
-                    generateRandomInt(1, MAX_MAP_X),
-                    generateRandomInt(1, MAX_MAP_Y)
-                )
-            );
+            SnowArea snowArea;
+            do {
+                snowArea = new SnowArea(
+                        generateRandomInt(SNOW_AREA_MIN_R, SNOW_AREA_MAX_R),
+                        generateRandomInt(1, MAX_MAP_X),
+                        generateRandomInt(1, MAX_MAP_Y)
+                );
+
+                for (SnowArea area : result) {
+                    if (snowAreaScorer.computeCost(snowArea, area) <= snowArea.r() + area.r()) {
+                        snowArea = null;
+                        continue;
+                    }
+                }
+            } while (snowArea == null);
+
+            result.add(snowArea);
         }
 
         return result;

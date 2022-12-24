@@ -1,24 +1,31 @@
 package org.example.datsanta;
 
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 public class GeneticSearch {
+    @Setter
     private int generationSize;
     private int genomeSize;
     private int numberOfCities;
+    @Setter
     private int reproductionSize;
+    @Setter
     private int maxIterations;
+    @Setter
     private float mutationRate;
+    @Setter
     private int tournamentSize;
     private GeneticSelectionType selectionType;
     private int[][] travelPrices;
     private int startingCity;
     private int targetFitness;
 
-    Random randomSeed = new Random(987654321);
+    Random randomSeed = new Random();
 
     public GeneticSearch(int numberOfCities, GeneticSelectionType selectionType, int[][] travelPrices, int startingCity, int targetFitness) {
         this.numberOfCities = numberOfCities;
@@ -178,13 +185,26 @@ public class GeneticSearch {
         }
     }
 
-    public static ArrayList<Child> runSearch(List<Child> nodes, int[][] matrix) {
+    public static ArrayList<Child> runSearch(
+            List<Child> nodes,
+            int[][] matrix,
+            int generationSize,
+            int reproductionSize,
+            int maxIterations,
+            float mutationRate,
+            int tournamentSize
+    ) {
         int numberOfCities = nodes.size();
         int[][] travelPrices = matrix;
 
         //printTravelPrices(travelPrices, numberOfCities);
 
         GeneticSearch geneticAlgorithm = new GeneticSearch(numberOfCities, GeneticSelectionType.TOURNAMENT, travelPrices, 0, 0);
+        geneticAlgorithm.setGenerationSize(generationSize);
+        geneticAlgorithm.setReproductionSize(reproductionSize);
+        geneticAlgorithm.setMaxIterations(maxIterations);
+        geneticAlgorithm.setMutationRate(mutationRate);
+        geneticAlgorithm.setTournamentSize(tournamentSize);
         GeneticGenome result = geneticAlgorithm.optimize();
         //System.out.println(result);
 
