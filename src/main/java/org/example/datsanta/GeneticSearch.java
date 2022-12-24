@@ -18,6 +18,8 @@ public class GeneticSearch {
     private int startingCity;
     private int targetFitness;
 
+    Random randomSeed = new Random(987654321);
+
     public GeneticSearch(int numberOfCities, GeneticSelectionType selectionType, int[][] travelPrices, int startingCity, int targetFitness) {
         this.numberOfCities = numberOfCities;
         this.genomeSize = numberOfCities - 1;
@@ -57,7 +59,7 @@ public class GeneticSearch {
 
     public GeneticGenome rouletteSelection(List<GeneticGenome> population) {
         int totalFitness = population.stream().map(GeneticGenome::getFitness).mapToInt(Integer::intValue).sum();
-        Random random = new Random();
+        Random random = new Random(randomSeed.nextInt());
         int selectedValue = random.nextInt(totalFitness);
         float recValue = (float) 1 / selectedValue;
         float currentSum = 0;
@@ -71,8 +73,8 @@ public class GeneticSearch {
         return population.get(selectRandom);
     }
 
-    public static <E> List<E> pickNRandomElements(List<E> list, int n) {
-        Random r = new Random();
+    public <E> List<E> pickNRandomElements(List<E> list, int n) {
+        Random r = new Random(randomSeed.nextInt());
         int length = list.size();
 
         if (length < n) return null;
@@ -89,7 +91,7 @@ public class GeneticSearch {
     }
 
     public GeneticGenome mutate(GeneticGenome salesman) {
-        Random random = new Random();
+        Random random = new Random(randomSeed.nextInt());
         float mutate = random.nextFloat();
         if (mutate < mutationRate) {
             List<Integer> genome = salesman.getGenome();
@@ -115,7 +117,7 @@ public class GeneticSearch {
 
     public List<GeneticGenome> crossover(List<GeneticGenome> parents) {
         // housekeeping
-        Random random = new Random();
+        Random random = new Random(randomSeed.nextInt());
         int breakpoint = random.nextInt(genomeSize);
         List<GeneticGenome> children = new ArrayList<>();
 

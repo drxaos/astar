@@ -71,7 +71,7 @@ public class DsTest {
 
         ExecutorService executorService = Executors.newFixedThreadPool(12);
         List<Future<List<Child>>> tasks = new ArrayList<>();
-        {
+        if (true) {
 
             while (!clustersQueue.isEmpty()) {
 
@@ -178,6 +178,7 @@ public class DsTest {
                 } else {
                     g.setColor(Color.DARK_GRAY.darker().darker());
                 }
+                g.setColor(Color.GRAY);
                 ps.forEach(p -> {
                     if (p.equals(zero)) {
                         return;

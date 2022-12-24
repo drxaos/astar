@@ -3,6 +3,7 @@ package org.example.datsanta;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class GeneticGenome implements Comparable {
     List<Integer> genome;
@@ -62,6 +63,11 @@ public class GeneticGenome implements Comparable {
 
     public void setFitness(int fitness) {
         this.fitness = fitness;
+    }
+
+    @Override
+    public int hashCode() {
+        return genome.hashCode();
     }
 
     @Override

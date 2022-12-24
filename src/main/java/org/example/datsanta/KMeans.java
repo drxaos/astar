@@ -27,7 +27,7 @@ public class KMeans {
     /**
      * Will be used to generate random numbers.
      */
-    private static final Random random = new Random();
+    private static final Random random = new Random(123456789);
 
     /**
      * Performs the K-Means clustering algorithm on the given dataset.
