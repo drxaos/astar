@@ -78,7 +78,9 @@ public class DsTest {
 
         long startTime = System.currentTimeMillis();
 
-        final List<List<Gift>> bags = Collector.collectGifts(loader.getDsMap());
+        final List<List<Gift>> bags = Collector.collectGiftsV3(loader.getDsMap());
+        bags.sort(Comparator.comparing(List::size, Comparator.reverseOrder()));
+
         List<List<Integer>> resultBags = bags.stream().map(l -> l.stream().map(Gift::id).toList()).toList();
 
         long bagsTime = System.currentTimeMillis();
@@ -110,22 +112,22 @@ public class DsTest {
         };
 
 
-//        Scorer<Child> kMeanScorer = childScorer;
+        Scorer<Child> kMeanScorer = childScorer;
 //        Scorer<Child> kMeanScorer = circleLineScorer;
-        Scorer<Child> kMeanScorer = new ChildScorer() {
-            @Override
-            public double computeCost(Child from, Child to) {
-                double angleFromZero = Math.atan2(from.y(), from.x());
-                while (angleFromZero < 0) {
-                    angleFromZero += 2 * Math.PI;
-                }
-                RotatingVector rotatingVector = new RotatingVector(to.x() - from.x(), to.y() - from.y());
-                rotatingVector.rotateCoordinates(angleFromZero);
-                //rotatingVector.x *= 1.5;
-                rotatingVector.restoreCoordinates();
-                return super.computeCost(from, new Child((int) (from.x() + rotatingVector.x), (int) (from.y() + rotatingVector.y)));
-            }
-        };
+//        Scorer<Child> kMeanScorer = new ChildScorer() {
+//            @Override
+//            public double computeCost(Child from, Child to) {
+//                double angleFromZero = Math.atan2(from.y(), from.x());
+//                while (angleFromZero < 0) {
+//                    angleFromZero += 2 * Math.PI;
+//                }
+//                RotatingVector rotatingVector = new RotatingVector(to.x() - from.x(), to.y() - from.y());
+//                rotatingVector.rotateCoordinates(angleFromZero);
+//                //rotatingVector.x *= 1.5;
+//                rotatingVector.restoreCoordinates();
+//                return super.computeCost(from, new Child((int) (from.x() + rotatingVector.x), (int) (from.y() + rotatingVector.y)));
+//            }
+//        };
 
 
 //        final ForkJoinPool forkJoinPool1 = new ForkJoinPool(12);
@@ -134,7 +136,8 @@ public class DsTest {
         while (!processingPoints.isEmpty()) {
             int targetSize = bags.get(0).size();
             int k = processingPoints.size() / targetSize;
-            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints, bags, k, kMeanScorer, childScorer, 100, loader.getDsMap().snowAreas());
+//            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints, bags, k, kMeanScorer, childScorer, 100, loader.getDsMap().snowAreas());
+            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints, bags, k, kMeanScorer, childScorer, 100, null);
 
             clusters.clear();
             clustersIteration.forEach((c, l) -> clusters.put(c, new ArrayList<>(l)));
@@ -412,7 +415,7 @@ public class DsTest {
                 } else {
                     g.setColor(Color.DARK_GRAY.darker().darker());
                 }
-                if (false) {
+                if (true) {
                     g.setColor(Color.GRAY);
                 }
                 ps.forEach(p -> {
@@ -676,7 +679,7 @@ public class DsTest {
             result.add(zero);
             return result;
         }));
-        for (int kk = 2; kk < 7; kk++) {
+        for (int kk = 2; kk < 5; kk++) {
             int finalKk = kk;
             geneticTasks.add(geneticExecutor.submit(() -> {
                 ArrayList<Child> result = new ArrayList<>();
