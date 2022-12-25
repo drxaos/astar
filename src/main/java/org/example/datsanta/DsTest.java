@@ -82,6 +82,7 @@ public class DsTest {
         bags.sort(Comparator.comparing(List::size, Comparator.reverseOrder()));
 
         List<List<Integer>> resultBags = bags.stream().map(l -> l.stream().map(Gift::id).toList()).toList();
+        System.out.println("bags " + resultBags.size() + ": " + resultBags.stream().map(List::size).toList());
 
         long bagsTime = System.currentTimeMillis();
         System.out.println("bagsTime: " + (bagsTime - startTime));
@@ -415,7 +416,7 @@ public class DsTest {
                 } else {
                     g.setColor(Color.DARK_GRAY.darker().darker());
                 }
-                if (true) {
+                if (false) {
                     g.setColor(Color.GRAY);
                 }
                 ps.forEach(p -> {
