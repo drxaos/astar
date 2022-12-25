@@ -11,37 +11,37 @@ public class Validator {
 
     public static void main(String[] args) throws Exception {
 
-        DsResult dsResult = new ObjectMapper().readValue(new File("faf7ef78-41b3-4a36-8423-688a61929c08_result_1671966612877_len_964269_cost_1215030_rid_01GN4G1QYK3Z76F10TRGEWDKMD.json"), DsResult.class);
+        DsResult dsResult = new ObjectMapper().readValue(new File("faf7ef78-41b3-4a36-8423-688a61929c08_result_1671977394381_len_948553_cost_1190321.json"), DsResult.class);
         DsMap dsMap = new ObjectMapper().readValue(new File("faf7ef78-41b3-4a36-8423-688a61929c08_map.json"), DsMap.class);
 
-
-        HashSet<Child> childrenSet = new HashSet<>(dsMap.children());
-        List<List<Child>> clusters = new ArrayList<>();
-        List<Child> currentCluster = new ArrayList<>();
-        clusters.add(currentCluster);
-        for (Child move : dsResult.moves()) {
-            if (move.equals(zero)) {
-                if (clusters.size() == 9) {
-                    break;
-                }
-                currentCluster = new ArrayList<>();
-                clusters.add(currentCluster);
-                continue;
-            }
-            if (!childrenSet.contains(move)) {
-                continue;
-            }
-            currentCluster.add(move);
-        }
-        clusters.remove(currentCluster);
-        for (int i = 0; i < clusters.size(); i++) {
-            List<Child> cluster = clusters.get(i);
-            Set<Child> result = currentCluster.stream()
-                    .distinct()
-                    .filter(cluster::contains)
-                    .collect(Collectors.toSet());
-            System.out.println("intersection " + i + ": " + result);
-        }
+//
+//        HashSet<Child> childrenSet = new HashSet<>(dsMap.children());
+//        List<List<Child>> clusters = new ArrayList<>();
+//        List<Child> currentCluster = new ArrayList<>();
+//        clusters.add(currentCluster);
+//        for (Child move : dsResult.moves()) {
+//            if (move.equals(zero)) {
+//                if (clusters.size() == 9) {
+//                    break;
+//                }
+//                currentCluster = new ArrayList<>();
+//                clusters.add(currentCluster);
+//                continue;
+//            }
+//            if (!childrenSet.contains(move)) {
+//                continue;
+//            }
+//            currentCluster.add(move);
+//        }
+//        clusters.remove(currentCluster);
+//        for (int i = 0; i < clusters.size(); i++) {
+//            List<Child> cluster = clusters.get(i);
+//            Set<Child> result = currentCluster.stream()
+//                    .distinct()
+//                    .filter(cluster::contains)
+//                    .collect(Collectors.toSet());
+//            System.out.println("intersection " + i + ": " + result);
+//        }
 
 
         Collections.reverse(dsResult.stackOfBags());

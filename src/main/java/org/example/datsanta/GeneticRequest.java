@@ -32,7 +32,7 @@ public class GeneticRequest {
             float mutationRate,
             int tournamentSize
     ) {
-        while (System.currentTimeMillis()-lastCall.get()<1000){
+        while (System.currentTimeMillis() - lastCall.get() < 1000) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -40,6 +40,10 @@ public class GeneticRequest {
             }
         }
         lastCall.set(System.currentTimeMillis());
+
+        int active = DsTest.activeGenetic.incrementAndGet();
+        System.out.println("active genetic: " + active);
+
 
         Worker.WorkerParams workerParams = new Worker.WorkerParams(
                 nodes, matrix, generationSize, reproductionSize, maxIterations, mutationRate, tournamentSize);
@@ -59,8 +63,12 @@ public class GeneticRequest {
                     ArrayList<Child> answer = exchange.getBody();
                     if (answer != null) {
                         System.out.println("got result from " + worker);
+
+                        active = DsTest.activeGenetic.decrementAndGet();
+                        System.out.println("active genetic: " + active);
+
                         return answer;
-                    }else{
+                    } else {
                         System.out.println("got BUSY from " + worker);
                     }
                 } catch (Exception e) {
