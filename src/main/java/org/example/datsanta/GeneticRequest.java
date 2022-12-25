@@ -10,6 +10,8 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class GeneticRequest {
@@ -17,11 +19,11 @@ public class GeneticRequest {
     public static List<String> workers = List.of(
             "http://localhost:8080/search",
             "https://727e-178-140-43-166.eu.ngrok.io/search",
-            "https://0d8e-81-94-235-186.eu.ngrok.io/search",
+            "https://a8f5-81-94-235-186.eu.ngrok.io/search",
             "https://3d37-178-140-43-166.eu.ngrok.io/search",
             "https://e5a1-77-222-98-160.eu.ngrok.io/search"
     );
-    static AtomicLong lastCall = new AtomicLong(System.currentTimeMillis());
+    static Map<Integer, AtomicLong> lastCall = new ConcurrentHashMap<>();
 
     public static ArrayList<Child> runSearch(
             List<Child> nodes,
@@ -32,57 +34,58 @@ public class GeneticRequest {
             float mutationRate,
             int tournamentSize
     ) {
-        while (System.currentTimeMillis() - lastCall.get() < 1000) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        lastCall.set(System.currentTimeMillis());
-
-        int active = DsTest.activeGenetic.incrementAndGet();
-        System.out.println("active genetic: " + active);
+        try {
+            int active = DsTest.activeGenetic.incrementAndGet();
+            System.out.println("active genetic: " + active);
 
 
-        Worker.WorkerParams workerParams = new Worker.WorkerParams(
-                nodes, matrix, generationSize, reproductionSize, maxIterations, mutationRate, tournamentSize);
-        while (true) {
-            for (String worker : workers) {
-                try {
-                    HttpHeaders headers = new HttpHeaders();
-                    HttpEntity<Worker.WorkerParams> entity = new HttpEntity<>(workerParams, headers);
-                    final ResponseEntity<ArrayList<Child>> exchange = new RestTemplate()
-                            .exchange(
-                                    new URI(worker),
-                                    HttpMethod.POST,
-                                    entity,
-                                    new ParameterizedTypeReference<ArrayList<Child>>() {
-                                    }
-                            );
-                    ArrayList<Child> answer = exchange.getBody();
-                    if (answer != null) {
-                        System.out.println("got result from " + worker);
+            Worker.WorkerParams workerParams = new Worker.WorkerParams(
+                    nodes, matrix, generationSize, reproductionSize, maxIterations, mutationRate, tournamentSize);
+            while (true) {
+                for (int i = 0; i < workers.size(); i++) {
+                    String worker = workers.get(i);
 
-                        active = DsTest.activeGenetic.decrementAndGet();
-                        System.out.println("active genetic: " + active);
-
-                        return answer;
+                    AtomicLong atomicLastCall = lastCall.computeIfAbsent(i, (i1) -> new AtomicLong(System.currentTimeMillis()));
+                    if (System.currentTimeMillis() - atomicLastCall.get() < 1000) {
+                        continue;
                     } else {
-                        System.out.println("got BUSY from " + worker);
+                        atomicLastCall.set(System.currentTimeMillis());
                     }
-                } catch (Exception e) {
-                    System.out.println("got " + e.getClass() + " from " + worker);
+
+                    try {
+                        HttpHeaders headers = new HttpHeaders();
+                        HttpEntity<Worker.WorkerParams> entity = new HttpEntity<>(workerParams, headers);
+                        final ResponseEntity<ArrayList<Child>> exchange = new RestTemplate()
+                                .exchange(
+                                        new URI(worker),
+                                        HttpMethod.POST,
+                                        entity,
+                                        new ParameterizedTypeReference<ArrayList<Child>>() {
+                                        }
+                                );
+                        ArrayList<Child> answer = exchange.getBody();
+                        if (answer != null) {
+                            System.out.println("got result from " + worker);
+
+                            active = DsTest.activeGenetic.decrementAndGet();
+                            System.out.println("active genetic: " + active);
+
+                            return answer;
+                        } else {
+                            //System.out.println("got BUSY from " + worker);
+                        }
+                    } catch (Exception e) {
+                        System.out.println("got " + e.getClass() + " from " + worker);
+                        Thread.sleep(10000);
+                    }
                 }
-            }
 
-            System.out.println("no free worker");
+                //System.out.println("no free worker");
 
-            try {
                 Thread.sleep(1500);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 

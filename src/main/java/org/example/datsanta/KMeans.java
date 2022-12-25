@@ -40,7 +40,8 @@ public class KMeans {
             int k,
             Scorer<Child> distance,
             ChildScorer directDistance,
-            int maxIterations
+            int maxIterations,
+            List<SnowArea> snowAreas
     ) {
 
         final Child zero = new Child(0, 0);
@@ -49,7 +50,11 @@ public class KMeans {
             return -childScorer.computeCost(c, zero);
         })).toList();
 
-        List<Centroid> centroids = randomCentroids(records, k);
+        List<Centroid> centroids = new ArrayList<>();
+        if (snowAreas != null) {
+            centroids.addAll(snowAreas.stream().map(s -> new Centroid(new HashMap<>(Map.of("x", (double) s.x(), "y", (double) s.y())))).toList());
+        }
+        centroids.addAll(randomCentroids(records, k - centroids.size()));
         Map<Centroid, List<Child>> clusters = new HashMap<>();
         Map<Centroid, List<Child>> lastState = new HashMap<>();
 
@@ -86,24 +91,26 @@ public class KMeans {
             clusters = new HashMap<>();
         }
 
-        final List<Centroid> sortedCentroids = centroids.stream().sorted(Comparator.comparing(c -> {
-            return -childScorer.computeCost(c.getChild(), zero);
-        })).toList();
-        final List<Child> furtherCluster = lastState.get(sortedCentroids.get(0));
-        final int targetCount = bags.get(0).size();
-        sortedCentroids.get(0).setCount(targetCount);
-        if (furtherCluster.size() < targetCount) {
-            final ArrayList<Child> processingRecords = new ArrayList<>(records);
-            processingRecords.removeAll(furtherCluster);
-            while (furtherCluster.size() < targetCount) {
-                Child record = nearestRecord(sortedCentroids.get(0), processingRecords, distance);
-                processingRecords.remove(record);
-                assignToCluster(lastState, record, sortedCentroids.get(0));
-            }
-        } else if (furtherCluster.size() > targetCount) {
-            while (furtherCluster.size() > targetCount) {
-                Child record = nearestRecord(new Child(0, 0), furtherCluster, directDistance);
-                furtherCluster.remove(record);
+        if (bags != null) {
+            final List<Centroid> sortedCentroids = centroids.stream().sorted(Comparator.comparing(c -> {
+                return -childScorer.computeCost(c.getChild(), zero);
+            })).toList();
+            final List<Child> furtherCluster = lastState.get(sortedCentroids.get(0));
+            final int targetCount = bags.get(0).size();
+            sortedCentroids.get(0).setCount(targetCount);
+            if (furtherCluster.size() < targetCount) {
+                final ArrayList<Child> processingRecords = new ArrayList<>(records);
+                processingRecords.removeAll(furtherCluster);
+                while (furtherCluster.size() < targetCount) {
+                    Child record = nearestRecord(sortedCentroids.get(0), processingRecords, distance);
+                    processingRecords.remove(record);
+                    assignToCluster(lastState, record, sortedCentroids.get(0));
+                }
+            } else if (furtherCluster.size() > targetCount) {
+                while (furtherCluster.size() > targetCount) {
+                    Child record = nearestRecord(new Child(0, 0), furtherCluster, directDistance);
+                    furtherCluster.remove(record);
+                }
             }
         }
         //

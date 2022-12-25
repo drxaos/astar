@@ -10,43 +10,28 @@ public class Validator {
     static Child zero = new Child(0, 0);
 
     public static void main(String[] args) throws Exception {
+        System.out.println(test(
+                "faf7ef78-41b3-4a36-8423-688a61929c08_map.json",
+                "faf7ef78-41b3-4a36-8423-688a61929c08_result_1671976532651_len_940045_cost_1186460.json"
+        ));
+    }
 
-        DsResult dsResult = new ObjectMapper().readValue(new File("faf7ef78-41b3-4a36-8423-688a61929c08_result_1671977394381_len_948553_cost_1190321.json"), DsResult.class);
-        DsMap dsMap = new ObjectMapper().readValue(new File("faf7ef78-41b3-4a36-8423-688a61929c08_map.json"), DsMap.class);
+    public static boolean test(String mapFile, String resultFile) throws Exception {
 
-//
-//        HashSet<Child> childrenSet = new HashSet<>(dsMap.children());
-//        List<List<Child>> clusters = new ArrayList<>();
-//        List<Child> currentCluster = new ArrayList<>();
-//        clusters.add(currentCluster);
-//        for (Child move : dsResult.moves()) {
-//            if (move.equals(zero)) {
-//                if (clusters.size() == 9) {
-//                    break;
-//                }
-//                currentCluster = new ArrayList<>();
-//                clusters.add(currentCluster);
-//                continue;
-//            }
-//            if (!childrenSet.contains(move)) {
-//                continue;
-//            }
-//            currentCluster.add(move);
-//        }
-//        clusters.remove(currentCluster);
-//        for (int i = 0; i < clusters.size(); i++) {
-//            List<Child> cluster = clusters.get(i);
-//            Set<Child> result = currentCluster.stream()
-//                    .distinct()
-//                    .filter(cluster::contains)
-//                    .collect(Collectors.toSet());
-//            System.out.println("intersection " + i + ": " + result);
-//        }
+        DsResult dsResult = new ObjectMapper().readValue(new File(resultFile), DsResult.class);
+        DsMap dsMap = new ObjectMapper().readValue(new File(mapFile), DsMap.class);
+
+        HashSet<Child> childrenSet = new HashSet<>(dsMap.children());
+        List<Child> moves1 = dsResult.moves();
+        while(!childrenSet.contains(moves1.get(moves1.size()-1))){
+            moves1.remove(moves1.size()-1);
+        }
+        new ObjectMapper().writeValue(new File("faf7ef78-41b3-4a36-8423-688a61929c08_result_1671976532651_len_940045_cost_1186460_fixed.json"), dsResult);
 
 
         Collections.reverse(dsResult.stackOfBags());
         List<Integer> bag = dsResult.stackOfBags().remove(0);
-        System.out.println("bag " + bag.size());
+        //System.out.println("bag " + bag.size());
 
         HashSet<Child> remain = new HashSet<>(dsMap.children());
         List<Child> moves = dsResult.moves();
@@ -62,12 +47,12 @@ public class Validator {
                         }
                     }
                 } else {
-                    System.out.println("no gift");
+                    //System.out.println("no gift");
                 }
             }
             if (remain.isEmpty()) {
                 System.out.println("done");
-                break;
+                return true;
             }
             if (move.equals(zero)) {
                 if (dsResult.stackOfBags().isEmpty()) {
@@ -78,10 +63,10 @@ public class Validator {
                     System.out.println("!!!");
                 }
                 bag = dsResult.stackOfBags().remove(0);
-                System.out.println("bag " + bag.size());
+                //System.out.println("bag " + bag.size());
             }
         }
-        System.out.println(remain);
-
+        //System.out.println(remain);
+        return false;
     }
 }
