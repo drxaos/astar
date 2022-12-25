@@ -214,21 +214,24 @@ public class Collector {
 
         int i = 0;
         while (!gifts.isEmpty()) {
+
+            if(actualNow.size() == 0 || actualNow.size() == 1)
+            {
+                System.out.println();
+            }
             final Gift gift = actualNow.get(i);
 
 //            int curItemValue = gift.volume() * 10000 + gift.weight();
 
-            if(gift.id()==17)
-            {
-                System.out.println();
+            int onBaseV = 0; //100
+            int onBaseW = 0; //200
+            for (Gift currentGift : gifts) {
+                onBaseV += currentGift.volume();
+                onBaseW += currentGift.weight();
             }
 
-            for (int j = 0; j < actualNow.size(); j++) {
-                if(actualNow.get(j).id()==17)
-                {
-                    System.out.println();
-                }
-
+            if (result.size() == 46) {
+                System.out.println();
             }
 
             int realV = 0; //100 7-2
@@ -241,7 +244,8 @@ public class Collector {
             if (100 - realV >= gift.volume() && 200 - realW >= gift.weight()) {
 //                curBag.addAndGet(curItemValue);
                 currentGifts.add(gift);
-                gifts.remove(i);
+
+                gifts.remove(gift);
                 actualNow.remove(i);
                 i = 0;
 
@@ -252,8 +256,17 @@ public class Collector {
                     realW += currentGift.weight();
                 }
 
-                if ((realV >= 100 && realW >= 125) || (realW >= 200 && realV >= 60)) {
+                if ((realV >= 99 && realW >= 0) || (realW >= 198 && realV >= 0)) {
                     result.add(currentGifts);
+
+                    for (int j = 0; j < currentGifts.size() - 1; j++) {
+                        if (currentGifts.get(j).id() == 1) {
+                            final Gift gift1 = currentGifts.get(j);
+//                    System.out.println();
+                            break;
+                        }
+                    }
+
                     System.out.println("Bag is completed " + result.size());
                     actualNow = new ArrayList<>(gifts);
 
@@ -264,9 +277,9 @@ public class Collector {
                 }
             }
 
-            if (i == actualNow.size() - 1 || realV >= 99 || realW >= 198) {
-                int onBaseV = 0; //100
-                int onBaseW = 0; //200
+            if (i == actualNow.size() - 1 || realV >= 95 || realW >= 196) {
+                onBaseV = 0; //100
+                onBaseW = 0; //200
                 for (Gift currentGift : gifts) {
                     onBaseV += currentGift.volume();
                     onBaseW += currentGift.weight();
@@ -274,9 +287,7 @@ public class Collector {
 
                 if (100 - realV < 7 && 200 - realW < 12) {
                     actualNow = removeLast(gifts, currentGifts);
-                } else
-
-                if (100 - realV < 7) {
+                } else if (100 - realV < 7) {
                     actualNow = removeLastV(gifts, currentGifts);
                 }else
 
