@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DsTest {
-    static ThreadFactory tf = new ThreadFactory() {
+    public static ThreadFactory tf = new ThreadFactory() {
 
         @Override
         public Thread newThread(Runnable r) {

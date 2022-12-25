@@ -18,7 +18,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import static org.example.datsanta.DsTest.tf;
 
 public class Collector {
     static String apiKey = "90a75999-2d77-41d9-aa22-26a85571da53";
@@ -48,30 +53,58 @@ public class Collector {
         long startTime = System.currentTimeMillis();
 
         final List<List<Gift>> lists1 = collectGiftsV3(loader.dsMap);
-
+//        crnt best 97 197 88 158 bags 46
 //        98, 199
         //2  150 75
 //        final List<List<Gift>> lists = Collector.collectGiftsV3(loader.getDsMap(), 98, 199);
-        int best = 100;
-        for (int v = 90; v <= 100; v++) {
-            for (int w = 190; w <= 200; w++) {
-                for (int v2 = 0; v2 < 100; v2++) {
-                    for (int w2 = 0; w2 < 200; w2++) {
-                        try {
-                            final List<List<Gift>> lists = Collector.collectGiftsV3(loader.getDsMap(), v, w, v2, w2);
-                            System.out.printf("result %s, %s %s %s %s bags%n", v, w, v2, w2, lists.size());
-                            if (lists.size() < best) {
-                                best = lists.size();
+
+        final ExecutorService executorService = Executors.newFixedThreadPool(20, tf);
+        AtomicInteger best = new AtomicInteger(100);
+        AtomicInteger bv = new AtomicInteger(0);
+        AtomicInteger bw = new AtomicInteger(0);
+        AtomicInteger bv2 = new AtomicInteger(0);
+        AtomicInteger bw2 = new AtomicInteger(0);
+        for (int v = 97; v <= 100; v++) {
+            for (int w = 197; w <= 200; w++) {
+                for (int v2 = 50; v2 < 100; v2++) {
+                    for (int w2 = 100; w2 < 200; w2++) {
+                        final AtomicInteger vA = new AtomicInteger(v);
+                        final AtomicInteger wA = new AtomicInteger(w);
+                        final AtomicInteger v2A = new AtomicInteger(v2);
+                        final AtomicInteger w2A = new AtomicInteger(w2);
+                        executorService.submit(() -> {
+                            try {
+
+                                if (w2A.get() % 50 == 0) {
+                                    System.out.println("crnt best %s %s %s %s bags %s".formatted(bv.get(), bw.get(), bv2.get(), bw2.get(), best.get()));
+                                }
+
+                                final List<List<Gift>> lists = Collector.collectGiftsV3(loader.getDsMap(), vA.get(), wA.get(), v2A.get(), w2A.get());
+                                System.out.printf("result %s, %s %s %s %s bags%n", vA.get(), wA.get(), v2A.get(), w2A.get(), lists.size());
+                                final int tmpBest = best.get();
+                                int tmpV = bv.get();
+                                int tmpW = bw.get();
+                                int tmpV2 = bv2.get();
+                                int tmpW2 = bw2.get();
+
+                                if (lists.size() < tmpBest) {
+                                    best.compareAndSet(tmpBest, lists.size());
+                                    bv.compareAndSet(tmpV, vA.get());
+                                    bw.compareAndSet(tmpW, wA.get());
+                                    bv2.compareAndSet(tmpV2, v2A.get());
+                                    bw2.compareAndSet(tmpW2, w2A.get());
+                                }
+                            } catch (Exception e) {
+                                System.out.println("result %s, %s %s %s error".formatted(vA.get(), wA.get(), v2A.get(), w2A.get()));
                             }
-                        } catch (Exception e) {
-                            System.out.println("result %s, %s %s %s error".formatted(v, w, v2, w2));
-                        }
+                        });
+
                     }
                 }
 
             }
         }
-        System.out.println("best: " + best);
+        System.out.println("best: " + best + " bv %s bw %s bv2 %s bw2 %s".formatted(bv, bw, bv2, bw2));
 //        final List<List<Gift>> bags = Collector.collectGiftsV3(loader.getDsMap());
 
         System.out.println("");
@@ -225,10 +258,10 @@ public class Collector {
         return gifts.stream().max(Comparator.comparingInt(Gift::weight).reversed().thenComparing(Comparator.comparingInt(Gift::volume))).get();
     }
 
-    //        98, 199
-    //2  150 75
+    //98 199 150 75 bags 47
+    //97 197 88 158 bags 46
     public static List<List<Gift>> collectGiftsV3(DsMap resp) {
-        return collectGiftsV3(resp, 98, 199, 75, 150);
+        return collectGiftsV3(resp, 97, 197, 89, 164);
     }
 
     @SneakyThrows
