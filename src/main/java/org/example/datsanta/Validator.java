@@ -11,7 +11,7 @@ import java.util.List;
 public class Validator {
     public static void main(String[] args) throws Exception {
 
-        DsResult dsResult = new ObjectMapper().readValue(new File("faf7ef78-41b3-4a36-8423-688a61929c08_result_1671966612877_len_964269_cost_1215030.json"), DsResult.class);
+        DsResult dsResult = new ObjectMapper().readValue(new File("faf7ef78-41b3-4a36-8423-688a61929c08_result_1671966612877_len_964269_cost_1215030_rid_01GN4G1QYK3Z76F10TRGEWDKMD.json"), DsResult.class);
         DsMap dsMap = new ObjectMapper().readValue(new File("faf7ef78-41b3-4a36-8423-688a61929c08_map.json"), DsMap.class);
 
         Child zero = new Child(0, 0);
