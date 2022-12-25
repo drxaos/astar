@@ -1,5 +1,7 @@
 package org.example.datsanta;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.SneakyThrows;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,9 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Collector {
     static String apiKey = "90a75999-2d77-41d9-aa22-26a85571da53";
@@ -47,7 +47,7 @@ public class Collector {
 
         long startTime = System.currentTimeMillis();
 
-        final List<List<Gift>> bags = Collector.collectGiftsV3(loader.getDsMap());
+        final List<List<Gift>> bags = Collector.collectGiftsV2(loader.getDsMap());
 
         System.out.println("");
     }
@@ -115,9 +115,11 @@ public class Collector {
 
         int currentVolume = 0;
         int currentWeight = 0;
+        boolean q = true;
 //        for (int i = 0; i < gifts.size(); i++) {
         while (!gifts.isEmpty()) {
-            final Gift gift = gifts.get(0);
+            final Gift gift = getGift(gifts, q);
+            q = !q;
 
             if (currentVolume + gift.volume() <= 100 && currentWeight + gift.weight() <= 200) {
                 result.get(result.size() - 1).add(gift);
@@ -134,12 +136,11 @@ public class Collector {
 
                 final Optional<Gift> optimumV = gifts.stream()
                         .filter(e -> (e.weight() <= 200 - finalCurrentWeight && e.volume() == 100 - finalCurrentVolume))
-                        .max(Comparator.comparingInt(Gift::weight));
+                        .max(Comparator.comparingInt(Gift::weight).thenComparing(Comparator.comparingInt(Gift::volume)));
 
                 final Optional<Gift> first = gifts.stream()
                         .filter(e -> (e.weight() <= 200 - finalCurrentWeight && e.volume() <= 100 - finalCurrentVolume))
-//                        .findFirst();
-                        .max(Comparator.comparingInt(Gift::weight));
+                        .max(Comparator.comparingInt(Gift::weight).thenComparing(Comparator.comparingInt(Gift::volume)));
 
                 if (optimum.isPresent()) {
                     result.get(result.size() - 1).add(optimum.get());
@@ -166,7 +167,12 @@ public class Collector {
             }
         }
 
-        result.sort(Comparator.comparing(List::size, Comparator.reverseOrder()));
+        final List<Pair> pairs = result.stream()
+                .map(e -> {
+                    return new Pair(e.stream().mapToInt(r -> r.weight()).sum(), e.stream().mapToInt(r -> r.volume()).sum());
+                })
+                .sorted((e1, e2) -> Integer.compare(e2.w, e1.w))
+                .toList();
 
 //        System.out.println(new ObjectMapper().writeValueAsString(result));
         final List<Integer> v = result.stream().map(e -> e.stream().map(Gift::volume).mapToInt(a -> a).sum()).toList();
@@ -174,7 +180,7 @@ public class Collector {
 //        System.out.println(new ObjectMapper().writeValueAsString(v));
 //        System.out.println(new ObjectMapper().writeValueAsString(result.stream().map(e -> e.stream().map(Gift::weight).mapToInt(a -> a).sum()).toList()));
         for (int i = 0; i < v.size(); i++) {
-            System.out.println(v.get(i) + "_" + w.get(i));
+            System.out.println(w.get(i) + "_" + v.get(i));
         }
 
         System.out.println("bags " + result.size() + ": " + result.stream().map(List::size).toList());
@@ -184,6 +190,14 @@ public class Collector {
         forCheck.sort(Comparator.comparingInt(Gift::id));
         System.out.println(forCheck.equals(gifts1));
         return result;
+    }
+
+    private static Gift getGift(final List<Gift> gifts, boolean q) {
+        if (!q) {
+            return gifts.stream().max(Comparator.comparingInt(Gift::weight).thenComparing(Comparator.comparingInt(Gift::volume))).get();
+
+        }
+        return gifts.stream().max(Comparator.comparingInt(Gift::weight).reversed().thenComparing(Comparator.comparingInt(Gift::volume))).get();
     }
 
     @SneakyThrows
@@ -299,6 +313,8 @@ public class Collector {
         gifts1.sort(Comparator.comparingInt(Gift::id));
         resp.gifts().sort(Comparator.comparingInt(Gift::id));
         System.out.println(resp.gifts().equals(gifts1));
+        resp.gifts().removeAll(gifts1);
+        System.out.println(resp.gifts());
 
         return result;
     }
@@ -343,5 +359,12 @@ public class Collector {
             actualNow = removeLastW(gifts, currentGifts);
         }
         return actualNow;
+    }
+
+    @Data
+    @AllArgsConstructor
+    static class Pair {
+        int w;
+        int v;
     }
 }
