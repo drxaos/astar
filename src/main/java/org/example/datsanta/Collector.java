@@ -125,15 +125,31 @@ public class Collector {
             } else {
                 final int finalCurrentWeight = currentWeight;
                 final int finalCurrentVolume = currentVolume;
-                final Optional<Gift> first = gifts.stream()
-                        .filter(e -> (e.weight() <= 200 - finalCurrentWeight && e.volume() <= 100 - finalCurrentVolume)).findFirst();
+
                 final Optional<Gift> optimum = gifts.stream()
-                        .filter(e -> (e.weight() == 200 - finalCurrentWeight && e.volume() == 100 - finalCurrentVolume)).findFirst();
+                        .filter(e -> (e.weight() == 200 - finalCurrentWeight && e.volume() == 100 - finalCurrentVolume))
+                        .findFirst();
+
+                final Optional<Gift> optimumV = gifts.stream()
+                        .filter(e -> (e.weight() <= 200 - finalCurrentWeight && e.volume() == 100 - finalCurrentVolume))
+                        .max(Comparator.comparingInt(Gift::weight));
+
+                final Optional<Gift> first = gifts.stream()
+                        .filter(e -> (e.weight() <= 200 - finalCurrentWeight && e.volume() <= 100 - finalCurrentVolume))
+//                        .findFirst();
+                        .max(Comparator.comparingInt(Gift::weight));
+
                 if (optimum.isPresent()) {
                     result.get(result.size() - 1).add(optimum.get());
                     currentVolume += optimum.get().volume();
                     currentWeight += optimum.get().weight();
                     gifts.remove(optimum.get());
+//                } else if () {
+                } else if (optimumV.isPresent()) {
+                    result.get(result.size() - 1).add(optimumV.get());
+                    currentVolume += optimumV.get().volume();
+                    currentWeight += optimumV.get().weight();
+                    gifts.remove(optimumV.get());
 //                } else if () {
                 } else if (first.isPresent()) {
                     result.get(result.size() - 1).add(first.get());
