@@ -676,65 +676,68 @@ public class DsTest {
             result.add(zero);
             return result;
         }));
-        geneticTasks.add(geneticExecutor.submit(() -> {
-            ArrayList<Child> result = new ArrayList<>();
-            try {
-                ArrayList<Child> cluster = new ArrayList<>(finalCluster50);
-                cluster.remove(zero);
-                Map<Centroid, List<Child>> subClusters = KMeans.fit(cluster, null, Math.max(2, cluster.size() / 6), childScorer, childScorer, 100, null);
-                List<List<Child>> entries = new ArrayList<>(subClusters.values().stream().toList());
-                for (int i = 0; i < entries.size(); i++) {
-                    List<Child> e = entries.get(i);
-                    ArrayList<Child> subCluster = new ArrayList<>(e);
-                    if (i == 0) {
-                        subCluster.add(0, zero);
-                        subCluster.add(0, entries.get(i + 1).get(0));
-                    } else if (i == entries.size() - 1) {
-                        subCluster.add(0, entries.get(i - 1).get(0));
-                        subCluster.add(0, zero);
-                    } else {
-                        subCluster.add(0, entries.get(i - 1).get(0));
-                        subCluster.add(0, entries.get(i + 1).get(0));
-                    }
+        for (int kk = 2; kk < 7; kk++) {
+            int finalKk = kk;
+            geneticTasks.add(geneticExecutor.submit(() -> {
+                ArrayList<Child> result = new ArrayList<>();
+                try {
+                    ArrayList<Child> cluster = new ArrayList<>(finalCluster50);
+                    cluster.remove(zero);
+                    Map<Centroid, List<Child>> subClusters = KMeans.fit(cluster, null, finalKk, childScorer, childScorer, 100, null);
+                    List<List<Child>> entries = new ArrayList<>(subClusters.values().stream().toList());
+                    for (int i = 0; i < entries.size(); i++) {
+                        List<Child> e = entries.get(i);
+                        ArrayList<Child> subCluster = new ArrayList<>(e);
+                        if (i == 0) {
+                            subCluster.add(0, zero);
+                            subCluster.add(0, entries.get(i + 1).get(0));
+                        } else if (i == entries.size() - 1) {
+                            subCluster.add(0, entries.get(i - 1).get(0));
+                            subCluster.add(0, zero);
+                        } else {
+                            subCluster.add(0, entries.get(i - 1).get(0));
+                            subCluster.add(0, entries.get(i + 1).get(0));
+                        }
 
-                    int[][] subMatrix = new int[subCluster.size()][subCluster.size()];
-                    for (int i1 = 0; i1 < subCluster.size(); i1++) {
-                        for (int j1 = 0; j1 < subCluster.size(); j1++) {
-                            if (i1 == j1) {
-                                continue;
-                            }
-                            final List<Child> route = finder.findRoute(subCluster.get(i1), subCluster.get(j1));
-                            double cost = geneticScorer.computeCost(route);
-                            subMatrix[i1][j1] = (int) cost;
-                            subMatrix[j1][i1] = (int) cost;
-                            if ((i1 == 1 && j1 == 0) || (i1 == 0 && j1 != 1) || (i1 != 0 && j1 == 1)) {
-                                cost = 1000000000;
+                        int[][] subMatrix = new int[subCluster.size()][subCluster.size()];
+                        for (int i1 = 0; i1 < subCluster.size(); i1++) {
+                            for (int j1 = 0; j1 < subCluster.size(); j1++) {
+                                if (i1 == j1) {
+                                    continue;
+                                }
+                                final List<Child> route = finder.findRoute(subCluster.get(i1), subCluster.get(j1));
+                                double cost = geneticScorer.computeCost(route);
                                 subMatrix[i1][j1] = (int) cost;
+                                subMatrix[j1][i1] = (int) cost;
+                                if ((i1 == 1 && j1 == 0) || (i1 == 0 && j1 != 1) || (i1 != 0 && j1 == 1)) {
+                                    cost = 1000000000;
+                                    subMatrix[i1][j1] = (int) cost;
+                                }
                             }
                         }
+                        ArrayList<Child> subResult = GeneticRequest.runSearch(subCluster, subMatrix, 4000, 100, 1500, 0.25f, 50);
+                        if (i == 0) {
+                            while (subResult.remove(entries.get(i + 1).get(0))) ;
+                            while (subResult.remove(zero)) ;
+                        } else if (i == entries.size() - 1) {
+                            while (subResult.remove(entries.get(i - 1).get(0))) ;
+                            while (subResult.remove(zero)) ;
+                        } else {
+                            while (subResult.remove(entries.get(i - 1).get(0))) ;
+                            while (subResult.remove(entries.get(i + 1).get(0))) ;
+                        }
+                        result.addAll(subResult);
                     }
-                    ArrayList<Child> subResult = GeneticRequest.runSearch(subCluster, subMatrix, 4000, 100, 1500, 0.25f, 50);
-                    if (i == 0) {
-                        while (subResult.remove(entries.get(i + 1).get(0))) ;
-                        while (subResult.remove(zero)) ;
-                    } else if (i == entries.size() - 1) {
-                        while (subResult.remove(entries.get(i - 1).get(0))) ;
-                        while (subResult.remove(zero)) ;
-                    } else {
-                        while (subResult.remove(entries.get(i - 1).get(0))) ;
-                        while (subResult.remove(entries.get(i + 1).get(0))) ;
-                    }
-                    result.addAll(subResult);
-                }
 
-                result.add(0, zero);
-                result.add(zero);
-                return result;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return new ArrayList<>(finalCluster50);
-            }
-        }));
+                    result.add(0, zero);
+                    result.add(zero);
+                    return result;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return new ArrayList<>(finalCluster50);
+                }
+            }));
+        }
 
         List<ArrayList<Child>> geneticResults = new ArrayList<>();
         for (Future<ArrayList<Child>> geneticTask : geneticTasks) {
