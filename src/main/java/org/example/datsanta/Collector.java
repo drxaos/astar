@@ -144,19 +144,16 @@ public class Collector {
                     currentVolume += optimum.get().volume();
                     currentWeight += optimum.get().weight();
                     gifts.remove(optimum.get());
-//                } else if () {
                 } else if (optimumV.isPresent()) {
                     result.get(result.size() - 1).add(optimumV.get());
                     currentVolume += optimumV.get().volume();
                     currentWeight += optimumV.get().weight();
                     gifts.remove(optimumV.get());
-//                } else if () {
                 } else if (first.isPresent()) {
                     result.get(result.size() - 1).add(first.get());
                     currentVolume += first.get().volume();
                     currentWeight += first.get().weight();
                     gifts.remove(first.get());
-//                } else if () {
                 } else {
                     result.add(new ArrayList<>());
                     result.get(result.size() - 1).add(gift);
