@@ -17,7 +17,8 @@ public class GeneticRequest {
     public static List<String> workers = List.of(
             "http://localhost:8080/search",
             "https://727e-178-140-43-166.eu.ngrok.io/search",
-            //"",
+            "https://0d8e-81-94-235-186.eu.ngrok.io/search",
+            "https://3d37-178-140-43-166.eu.ngrok.io/search",
             "https://e5a1-77-222-98-160.eu.ngrok.io/search"
     );
     static AtomicLong lastCall = new AtomicLong(System.currentTimeMillis());
@@ -59,13 +60,18 @@ public class GeneticRequest {
                     if (answer != null) {
                         System.out.println("got result from " + worker);
                         return answer;
+                    }else{
+                        System.out.println("got BUSY from " + worker);
                     }
                 } catch (Exception e) {
                     System.out.println("got " + e.getClass() + " from " + worker);
                 }
             }
+
+            System.out.println("no free worker");
+
             try {
-                Thread.sleep(500);
+                Thread.sleep(1500);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

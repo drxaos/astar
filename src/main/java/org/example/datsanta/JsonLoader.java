@@ -54,9 +54,16 @@ public class JsonLoader {
             }
         });
 
+//        for (int i = 0; i < 10000; i += 200) {
+//            for (int j = 0; j < 10000; j += 200) {
+//                children.add(new Child(i, j));
+//            }
+//        }
+
         for (Child from : children) {
             result.put(from, children);
         }
+
 
         return result;
     }
