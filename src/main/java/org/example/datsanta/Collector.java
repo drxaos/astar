@@ -259,7 +259,7 @@ public class Collector {
     }
 
     //98 199 150 75 bags 47
-    //97 197 88 158 bags 46
+    //97 197 89 164 bags 46
     public static List<List<Gift>> collectGiftsV3(DsMap resp) {
         return collectGiftsV3(resp, 97, 197, 89, 164);
     }
