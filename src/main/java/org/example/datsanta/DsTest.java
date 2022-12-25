@@ -46,8 +46,8 @@ public class DsTest {
     static final List<List<Child>> resultParts = new ArrayList<>();
     static final List<List<Child>> drawParts = new ArrayList<>();
     static final List<AtomicBoolean> drawPartsSelfIntersecting = new ArrayList<>();
-    static ExecutorService geneticExecutor = Executors.newFixedThreadPool(20, tf);
-    static ExecutorService bestPathExecutor = Executors.newFixedThreadPool(20, tf);
+    static ExecutorService geneticExecutor = Executors.newFixedThreadPool(10, tf);
+    static ExecutorService bestPathExecutor = Executors.newFixedThreadPool(10, tf);
     static final ChildScorer childScorer = new ChildScorer();
 
     public static void main(String[] args) throws Exception {
@@ -201,7 +201,7 @@ public class DsTest {
 //                    throw new RuntimeException(e);
 //                }
 //            });
-//            ArrayList<Child> fullPath = GeneticSearch.runSearch(new ArrayList<>(nodes.keySet()), matrix, 5000, 200, 1000, 0.2f, 40);
+//            ArrayList<Child> fullPath = GeneticRequest.runSearch(new ArrayList<>(nodes.keySet()), matrix, 5000, 200, 1000, 0.2f, 40);
 //            resultPath.addAll(fullPath);
 //        }
 
@@ -229,14 +229,16 @@ public class DsTest {
                             cluster50entry.getKey(),
                             cluster50entry.getValue()
                     );
-                    if (drawPartsSelfIntersecting.get(clIndex).get()) {
-                        result = bestPath(
-                                geneticScorer,
-                                clIndex,
-                                cluster50entry.getKey(),
-                                null
-                        );
-                    }
+//                    for (int i = 0; i < 5; i++) {
+//                        if (drawPartsSelfIntersecting.get(clIndex).get()) {
+//                            result = bestPath(
+//                                    geneticScorer,
+//                                    clIndex,
+//                                    cluster50entry.getKey(),
+//                                    null
+//                            );
+//                        }
+//                    }
                     return result;
                 });
             }
@@ -275,19 +277,21 @@ public class DsTest {
                 if (dblClick != null) {
                     clusters.forEach((c, ps) -> {
                         if (childScorer.computeCost(dblClick, c.getChild()) < 400) {
-                            try {
-                                System.out.println("redo " + c.getClIndex());
-                                bestPath(
-                                        geneticScorer,
-                                        c.getClIndex(),
-                                        c,
-                                        null
-                                );
-                                System.out.println("done " + c.getClIndex());
-                                saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
-                            } catch (InterruptedException | ExecutionException e) {
-                                e.printStackTrace();
-                            }
+                            bestPathExecutor.submit(() -> {
+                                try {
+                                    System.out.println("redo " + c.getClIndex());
+                                    bestPath(
+                                            geneticScorer,
+                                            c.getClIndex(),
+                                            c,
+                                            null
+                                    );
+                                    System.out.println("done " + c.getClIndex());
+                                    saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                                } catch (InterruptedException | ExecutionException e) {
+                                    e.printStackTrace();
+                                }
+                            });
                         }
                     });
                 }
@@ -429,7 +433,7 @@ public class DsTest {
                 }
             }
             drawWindow.setImg(img);
-            Thread.sleep(15);
+            Thread.sleep(60);
         }
     }
 
@@ -440,7 +444,7 @@ public class DsTest {
             System.out.println("wrong parts path");
             System.out.println(resultPath);
             System.out.println(partsResultPath);
-            throw new RuntimeException("wat");
+            //throw new RuntimeException("wat");
         }
 
         long geneticTime = System.currentTimeMillis();
@@ -532,23 +536,23 @@ public class DsTest {
         List<Child> finalCluster50 = new ArrayList<>(cluster50);
         List<Future<ArrayList<Child>>> geneticTasks = new ArrayList<>();
         if (finalCluster50.size() <= 10) {
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 2000, 50, 400, 0.2f, 20)));
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 1000, 50, 700, 0.3f, 20)));
+            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 2000, 50, 400, 0.2f, 20)));
+            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 1000, 50, 700, 0.3f, 20)));
         } else if (finalCluster50.size() <= 20) {
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 3000, 300, 3000, 0.3f, 30)));
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 2000, 100, 1000, 0.1f, 30)));
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 4000, 50, 1500, 0.25f, 50)));
+            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 3000, 300, 3000, 0.3f, 30)));
+//            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 2000, 100, 1000, 0.1f, 30)));
+            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 4000, 50, 1500, 0.25f, 50)));
         } else {
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 3000, 300, 3000, 0.3f, 30)));
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 2000, 100, 100, 0.1f, 30)));
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 8000, 100, 5000, 0.2f, 50)));
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 5000, 200, 1000, 0.2f, 40)));
+//            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 3000, 300, 3000, 0.3f, 30)));
+//            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 2000, 100, 100, 0.1f, 30)));
+            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 8000, 100, 5000, 0.2f, 50)));
+            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 5000, 200, 1000, 0.2f, 40)));
         }
         if (redo || finalCluster50.size() > 35) {
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 4000, 500, 1000, 0.5f, 100)));
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 5000, 200, 10000, 0.2f, 40)));
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 10000, 1000, 10000, 0.1f, 400)));
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticSearch.runSearch(finalCluster50, matrix, 10000, 1000, 10000, 0.5f, 400)));
+//            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 4000, 500, 1000, 0.5f, 100)));
+//            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 5000, 200, 10000, 0.2f, 40)));
+            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 10000, 1000, 10000, 0.1f, 400)));
+            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 10000, 1000, 10000, 0.5f, 400)));
         }
         geneticTasks.add(geneticExecutor.submit(() -> {
             Child[] array = finalCluster50.toArray(new Child[0]);
