@@ -1,6 +1,5 @@
 package org.example.datsanta;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -17,6 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Collector {
     static String apiKey = "90a75999-2d77-41d9-aa22-26a85571da53";
@@ -45,7 +47,7 @@ public class Collector {
 
         long startTime = System.currentTimeMillis();
 
-        final List<List<Gift>> bags = Collector.collectGiftsV2(loader.getDsMap());
+        final List<List<Gift>> bags = Collector.collectGiftsV3(loader.getDsMap());
 
         System.out.println("");
     }
@@ -182,5 +184,164 @@ public class Collector {
         forCheck.sort(Comparator.comparingInt(Gift::id));
         System.out.println(forCheck.equals(gifts1));
         return result;
+    }
+
+    @SneakyThrows
+    public static List<List<Gift>> collectGiftsV3(DsMap resp) {
+
+        List<List<Gift>> result = new ArrayList<>();
+
+        final List<Gift> gifts = new ArrayList<>(resp.gifts());
+        gifts.sort(Comparator.comparing(Gift::volume).reversed().thenComparing(Comparator.comparing(Gift::weight).reversed()));
+        List<Gift> actualNow = new ArrayList<>(gifts);
+
+        List<Gift> currentGifts = new ArrayList<>();
+
+
+        int i = 0;
+        while (!gifts.isEmpty()) {
+            final Gift gift = actualNow.get(i);
+
+//            int curItemValue = gift.volume() * 10000 + gift.weight();
+
+            if(gift.id()==17)
+            {
+                System.out.println();
+            }
+
+            for (int j = 0; j < actualNow.size(); j++) {
+                if(actualNow.get(j).id()==17)
+                {
+                    System.out.println();
+                }
+
+            }
+
+            int realV = 0; //100 7-2
+            int realW = 0; //200 12-4
+            for (Gift currentGift : currentGifts) {
+                realV += currentGift.volume();
+                realW += currentGift.weight();
+            }
+
+            if (100 - realV >= gift.volume() && 200 - realW >= gift.weight()) {
+//                curBag.addAndGet(curItemValue);
+                currentGifts.add(gift);
+                gifts.remove(i);
+                actualNow.remove(i);
+                i = 0;
+
+                realV = 0; //100
+                realW = 0; //200
+                for (Gift currentGift : currentGifts) {
+                    realV += currentGift.volume();
+                    realW += currentGift.weight();
+                }
+
+                if ((realV >= 100 && realW >= 125) || (realW >= 200 && realV >= 60)) {
+                    result.add(currentGifts);
+                    System.out.println("Bag is completed " + result.size());
+                    actualNow = new ArrayList<>(gifts);
+
+                    final List<Gift> giftStream = actualNow.stream().filter(gift1 -> gift1.id() == 17).toList();
+
+                    currentGifts = new ArrayList<>();
+                    continue;
+                }
+            }
+
+            if (i == actualNow.size() - 1 || realV >= 99 || realW >= 198) {
+                int onBaseV = 0; //100
+                int onBaseW = 0; //200
+                for (Gift currentGift : gifts) {
+                    onBaseV += currentGift.volume();
+                    onBaseW += currentGift.weight();
+                }
+
+                if (100 - realV < 7 && 200 - realW < 12) {
+                    actualNow = removeLast(gifts, currentGifts);
+                } else
+
+                if (100 - realV < 7) {
+                    actualNow = removeLastV(gifts, currentGifts);
+                }else
+
+                if (200 - realW < 12) {
+                    actualNow = removeLastW(gifts, currentGifts);
+                }
+
+                realV = 0; //100
+                realW = 0; //200
+                for (Gift currentGift : currentGifts) {
+                    realV += currentGift.volume();
+                    realW += currentGift.weight();
+                }
+
+                i = 0;
+                continue;
+            }
+            i++;
+        }
+        result.add(currentGifts);
+        System.out.println("");
+//        gi
+        final List<Integer> v = result.stream().map(e -> e.stream().map(Gift::volume).mapToInt(a -> a).sum()).toList();
+        final List<Integer> w = result.stream().map(e -> e.stream().map(Gift::weight).mapToInt(a -> a).sum()).toList();
+//        System.out.println(new ObjectMapper().writeValueAsString(v));
+//        System.out.println(new ObjectMapper().writeValueAsString(result.stream().map(e -> e.stream().map(Gift::weight).mapToInt(a -> a).sum()).toList()));
+        for (int j= 0; j < v.size(); j++) {
+            System.out.println(v.get(j) + "_" + w.get(j));
+        }
+
+        System.out.println("bags " + result.size() + ": " + result.stream().map(List::size).toList());
+
+        final List<Gift> gifts1 = new ArrayList<>(result.stream().flatMap(e -> e.stream()).toList());
+        gifts1.sort(Comparator.comparingInt(Gift::id));
+        resp.gifts().sort(Comparator.comparingInt(Gift::id));
+        System.out.println(resp.gifts().equals(gifts1));
+
+        return result;
+    }
+
+    private static List<Gift> removeLast(List<Gift> gifts, List<Gift> currentGifts) {
+        List<Gift> actualNow;
+        Gift giftForSkip = currentGifts.remove(currentGifts.size() - 1);
+        gifts.add(giftForSkip);
+//        curBag.addAndGet(-1 * (giftForSkip.volume() * 10000 + giftForSkip.weight()));
+        actualNow = gifts.stream().filter(g -> g.volume() < giftForSkip.volume() && g.weight() < giftForSkip.weight())
+            .sorted(Comparator.comparing(Gift::volume).reversed().thenComparing(Comparator.comparing(Gift::weight).reversed()))
+            .collect(Collectors.toList());
+        if (actualNow.isEmpty()) {
+            actualNow = removeLast(gifts, currentGifts);
+        }
+        return actualNow;
+    }
+
+    private static List<Gift> removeLastV(List<Gift> gifts, List<Gift> currentGifts) {
+        List<Gift> actualNow;
+        Gift giftForSkip = currentGifts.remove(currentGifts.size() - 1);
+        gifts.add(giftForSkip);
+//        curBag.addAndGet(-1 * (giftForSkip.volume() * 10000 + giftForSkip.weight()));
+        actualNow = gifts.stream().filter(g -> g.volume() < giftForSkip.volume())
+            .sorted(Comparator.comparing(Gift::volume).reversed().thenComparing(Comparator.comparing(Gift::weight).reversed()))
+            .collect(Collectors.toList());
+        if (actualNow.isEmpty()) {
+            actualNow = removeLastV(gifts, currentGifts);
+        }
+        return actualNow;
+    }
+
+    private static List<Gift> removeLastW(List<Gift> gifts, List<Gift> currentGifts) {
+        List<Gift> actualNow;
+        Gift giftForSkip = currentGifts.remove(currentGifts.size() - 1);
+        gifts.add(giftForSkip);
+//        curBag.addAndGet(-1 * (giftForSkip.volume() * 10000 + giftForSkip.weight()));
+        actualNow = gifts.stream().filter(g -> g.weight() < giftForSkip.weight())
+            .sorted(Comparator.comparing(Gift::volume).reversed().thenComparing(Comparator.comparing(Gift::weight).reversed()))
+            .collect(Collectors.toList());
+        if (actualNow.isEmpty()) {
+            actualNow = removeLastW(gifts, currentGifts);
+        }
+        return actualNow;
     }
 }
