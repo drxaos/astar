@@ -48,6 +48,8 @@ public class DsTest {
     static ExecutorService geneticExecutor = Executors.newFixedThreadPool(12 * GeneticRequest.workers.size(), tf);
     static ExecutorService bestPathExecutor = Executors.newFixedThreadPool(50, tf);
     static final ChildScorer childScorer = new ChildScorer();
+    static AtomicInteger activeBestPath = new AtomicInteger(0);
+    static AtomicInteger activeGenetic = new AtomicInteger(0);
 
     public static void main(String[] args) throws Exception {
 //        MapGenerator generator = new MapGenerator();
@@ -84,11 +86,28 @@ public class DsTest {
 
 
         final CircleLineScorer circleLineScorer = new CircleLineScorer(loader.getDsMap().snowAreas());
+        final Set<Child> allChildrenSet = new HashSet<>(loader.dsMap.children());
         finder = new AStarFinder<>(
                 new Graph<>(nodes),
                 circleLineScorer,
                 childScorer
-        );
+        ) {
+            @Override
+            public List<Child> findRoute(Child from, Child to) {
+                List<Child> route = super.findRoute(from, to);
+                for (int i = 1; i < route.size() - 1; i++) {
+                    Child r = route.get(i);
+                    if (allChildrenSet.contains(r)) {
+                        if (r.y() + 1 >= 10000) {
+                            route.set(i, new Child(r.x(), r.y() - 1));
+                        } else {
+                            route.set(i, new Child(r.x(), r.y() + 1));
+                        }
+                    }
+                }
+                return route;
+            }
+        };
 
 
         Scorer<Child> kMeanScorer = childScorer;
@@ -167,6 +186,24 @@ public class DsTest {
         long kmeanTime = System.currentTimeMillis();
         System.out.println("kmeanTime: " + (kmeanTime - bagsTime));
 
+//        AtomicInteger cqc = new AtomicInteger(0);
+//        clustersQueue.parallelStream().forEach(e -> {
+//            int i1 = cqc.incrementAndGet();
+//            System.out.println("start matrix " + i1);
+//            int[][] matrix;
+//            matrix = new int[e.getValue().size()][e.getValue().size()];
+//            for (int i = 0; i < e.getValue().size(); i++) {
+//                for (int j = i + 1; j < e.getValue().size(); j++) {
+//                    final List<Child> route = finder.findRoute(e.getValue().get(i), e.getValue().get(j));
+//                    double cost = circleLineScorer.computeCost(route);
+//                    matrix[i][j] = (int) cost;
+//                    matrix[j][i] = (int) cost;
+//                }
+//            }
+//            e.getKey().setMatrix(matrix);
+//            System.out.println("end matrix " + i1);
+//        });
+
 
         notMarked.addAll(loader.getDsMap().children());
 
@@ -231,14 +268,24 @@ public class DsTest {
                             cluster50entry.getValue()
                     );
                     for (int i = 0; i < 5; i++) {
-                        if (drawPartsSelfIntersecting.get(clIndex).get()) {
-                            result = bestPath(
-                                    geneticScorer,
-                                    clIndex,
-                                    cluster50entry.getKey(),
-                                    null
-                            );
-                        }
+                        int finalI = i;
+                        bestPathExecutor.submit(() -> {
+                            System.out.println("recalc " + clIndex + " #" + finalI);
+                            try {
+                                bestPath(
+                                        geneticScorer,
+                                        clIndex,
+                                        cluster50entry.getKey(),
+                                        null
+                                );
+                                System.out.println("done recalc " + clIndex);
+                                synchronized (resultParts) {
+                                    saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                                }
+                            } catch (InterruptedException | ExecutionException e) {
+                                e.printStackTrace();
+                            }
+                        });
                     }
                     return result;
                 });
@@ -271,7 +318,9 @@ public class DsTest {
                 }
             });
 
-            saveResult(true, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+            synchronized (resultParts) {
+                saveResult(true, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+            }
         });
 
 
@@ -294,7 +343,9 @@ public class DsTest {
                                             null
                                     );
                                     System.out.println("done " + c.getClIndex());
-                                    saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                                    synchronized (resultParts) {
+                                        saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                                    }
                                 } catch (InterruptedException | ExecutionException e) {
                                     e.printStackTrace();
                                 }
@@ -518,6 +569,9 @@ public class DsTest {
             Centroid centroid,
             List<Child> cluster50
     ) throws InterruptedException, ExecutionException {
+        int active = activeBestPath.incrementAndGet();
+        System.out.println("active bestPath: " + active);
+
         boolean redo = false;
         if (cluster50 != null) {
             centroid.setOriginalCluster(cluster50);
@@ -622,72 +676,78 @@ public class DsTest {
             prev = child;
         }
 
-        List<Child> resultPart = resultParts.get(clIndex);
-        if (!resultPart.isEmpty()) {
-            double oldCost = geneticScorer.computeCost(resultPart);
-            double newCost = geneticScorer.computeCost(deduplicated);
-            System.out.println("old cost: " + oldCost);
-            if (newCost > oldCost) {
-                System.out.println("not found better solution");
-                return deduplicated;
-            }
-        }
+        synchronized (resultParts) {
 
-        clusters.put(centroid, deduplicated);
-
-        long endClusterGeneticTime = System.currentTimeMillis();
-        System.out.println("singleClusterTime" + clIndex + ": " + (endClusterGeneticTime - startClusterGeneticTime));
-
-        resultParts.get(clIndex).clear();
-        resultParts.get(clIndex).addAll(deduplicated);
-
-        {
-            drawParts.get(clIndex).clear();
-            HashSet<Child> originalSet = new HashSet<>(centroid.getOriginalCluster());
-            originalSet.remove(zero);
-            ArrayList<Child> drawPart = new ArrayList<>(deduplicated);
-            while (!originalSet.contains(drawPart.get(0))) {
-                drawPart.remove(0);
-            }
-            while (!originalSet.contains(drawPart.get(drawPart.size() - 1))) {
-                drawPart.remove(drawPart.size() - 1);
-            }
-            drawParts.get(clIndex).addAll(drawPart);
-
-
-            Set<Child> drawPointsSet = new HashSet<>(drawPart);
-            //ArrayList<ChildDouble> intersectionPoints = new ArrayList<>();
-            AtomicBoolean si = new AtomicBoolean(false);
-            loop:
-            for (int i = 0; i < drawPart.size() - 1; i++) {
-                final Child from1 = drawPart.get(i);
-                final Child to1 = drawPart.get(i + 1);
-                for (int j = i + 1; j < drawPart.size() - 1; j++) {
-                    final Child from2 = drawPart.get(j);
-                    final Child to2 = drawPart.get(j + 1);
-                    if (from1.equals(from2) && to1.equals(to2)) {
-                        continue;
-                    }
-                    if (from1.equals(to2) && to1.equals(from2)) {
-                        continue;
-                    }
-                    ChildDouble intersection = PointOfIntersection.pointOfIntersection(
-                            ChildDouble.from(from1),
-                            ChildDouble.from(to1),
-                            ChildDouble.from(from2),
-                            ChildDouble.from(to2));
-                    if (intersection != null && !drawPointsSet.contains(intersection.toChild())) {
-                        //intersectionPoints.add(intersection);
-                        si.set(true);
-                        break loop;
-                    }
+            List<Child> resultPart = resultParts.get(clIndex);
+            if (!resultPart.isEmpty()) {
+                double oldCost = geneticScorer.computeCost(resultPart);
+                double newCost = geneticScorer.computeCost(deduplicated);
+                System.out.println("old cost: " + oldCost);
+                if (newCost > oldCost) {
+                    System.out.println("not found better solution");
+                    return deduplicated;
                 }
             }
-            centroid.setSelfIntersecting(si.get());
-            drawPartsSelfIntersecting.get(clIndex).set(si.get());
-        }
 
-        return deduplicated;
+            clusters.put(centroid, deduplicated);
+
+            long endClusterGeneticTime = System.currentTimeMillis();
+            System.out.println("singleClusterTime" + clIndex + ": " + (endClusterGeneticTime - startClusterGeneticTime));
+
+            resultParts.get(clIndex).clear();
+            resultParts.get(clIndex).addAll(deduplicated);
+
+            {
+                drawParts.get(clIndex).clear();
+                HashSet<Child> originalSet = new HashSet<>(centroid.getOriginalCluster());
+                originalSet.remove(zero);
+                ArrayList<Child> drawPart = new ArrayList<>(deduplicated);
+                while (!originalSet.contains(drawPart.get(0))) {
+                    drawPart.remove(0);
+                }
+                while (!originalSet.contains(drawPart.get(drawPart.size() - 1))) {
+                    drawPart.remove(drawPart.size() - 1);
+                }
+                drawParts.get(clIndex).addAll(drawPart);
+
+
+                Set<Child> drawPointsSet = new HashSet<>(drawPart);
+                //ArrayList<ChildDouble> intersectionPoints = new ArrayList<>();
+                AtomicBoolean si = new AtomicBoolean(false);
+                loop:
+                for (int i = 0; i < drawPart.size() - 1; i++) {
+                    final Child from1 = drawPart.get(i);
+                    final Child to1 = drawPart.get(i + 1);
+                    for (int j = i + 1; j < drawPart.size() - 1; j++) {
+                        final Child from2 = drawPart.get(j);
+                        final Child to2 = drawPart.get(j + 1);
+                        if (from1.equals(from2) && to1.equals(to2)) {
+                            continue;
+                        }
+                        if (from1.equals(to2) && to1.equals(from2)) {
+                            continue;
+                        }
+                        ChildDouble intersection = PointOfIntersection.pointOfIntersection(
+                                ChildDouble.from(from1),
+                                ChildDouble.from(to1),
+                                ChildDouble.from(from2),
+                                ChildDouble.from(to2));
+                        if (intersection != null && !drawPointsSet.contains(intersection.toChild())) {
+                            //intersectionPoints.add(intersection);
+                            si.set(true);
+                            break loop;
+                        }
+                    }
+                }
+                centroid.setSelfIntersecting(si.get());
+                drawPartsSelfIntersecting.get(clIndex).set(si.get());
+            }
+
+            active = activeBestPath.decrementAndGet();
+            System.out.println("active bestPath: " + active);
+
+            return deduplicated;
+        }
     }
 
 
