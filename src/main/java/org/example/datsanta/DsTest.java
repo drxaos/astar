@@ -76,7 +76,7 @@ public class DsTest {
 
         long startTime = System.currentTimeMillis();
 
-        final List<List<Gift>> bags = Collector.collectGifts(loader.getDsMap());
+        final List<List<Gift>> bags = Collector.collectGiftsV2(loader.getDsMap());
         List<List<Integer>> resultBags = bags.stream().map(l -> l.stream().map(Gift::id).toList()).toList();
 
         long bagsTime = System.currentTimeMillis();
