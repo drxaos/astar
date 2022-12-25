@@ -47,7 +47,32 @@ public class Collector {
 
         long startTime = System.currentTimeMillis();
 
-        final List<List<Gift>> bags = Collector.collectGiftsV2(loader.getDsMap());
+        final List<List<Gift>> lists1 = collectGiftsV3(loader.dsMap);
+
+//        98, 199
+        //2  150 75
+//        final List<List<Gift>> lists = Collector.collectGiftsV3(loader.getDsMap(), 98, 199);
+        int best = 100;
+        for (int v = 90; v <= 100; v++) {
+            for (int w = 190; w <= 200; w++) {
+                for (int v2 = 0; v2 < 100; v2++) {
+                    for (int w2 = 0; w2 < 200; w2++) {
+                        try {
+                            final List<List<Gift>> lists = Collector.collectGiftsV3(loader.getDsMap(), v, w, v2, w2);
+                            System.out.printf("result %s, %s %s %s %s bags%n", v, w, v2, w2, lists.size());
+                            if (lists.size() < best) {
+                                best = lists.size();
+                            }
+                        } catch (Exception e) {
+                            System.out.println("result %s, %s %s %s error".formatted(v, w, v2, w2));
+                        }
+                    }
+                }
+
+            }
+        }
+        System.out.println("best: " + best);
+//        final List<List<Gift>> bags = Collector.collectGiftsV3(loader.getDsMap());
 
         System.out.println("");
     }
@@ -200,8 +225,14 @@ public class Collector {
         return gifts.stream().max(Comparator.comparingInt(Gift::weight).reversed().thenComparing(Comparator.comparingInt(Gift::volume))).get();
     }
 
-    @SneakyThrows
+    //        98, 199
+    //2  150 75
     public static List<List<Gift>> collectGiftsV3(DsMap resp) {
+        return collectGiftsV3(resp, 98, 199, 75, 150);
+    }
+
+    @SneakyThrows
+    public static List<List<Gift>> collectGiftsV3(DsMap resp, int v, int w, int v2, int w2) {
 
         List<List<Gift>> result = new ArrayList<>();
 
@@ -213,11 +244,13 @@ public class Collector {
 
 
         int i = 0;
-        while (!gifts.isEmpty()) {
+        int iter_count = 0;
 
-            if(actualNow.size() == 0 || actualNow.size() == 1)
-            {
-                System.out.println();
+        while (!gifts.isEmpty()) {
+            iter_count++;
+
+            if (actualNow.size() == 0 || actualNow.size() == 1) {
+//                System.out.println();
             }
             final Gift gift = actualNow.get(i);
 
@@ -228,10 +261,6 @@ public class Collector {
             for (Gift currentGift : gifts) {
                 onBaseV += currentGift.volume();
                 onBaseW += currentGift.weight();
-            }
-
-            if (result.size() == 46) {
-                System.out.println();
             }
 
             int realV = 0; //100 7-2
@@ -255,8 +284,8 @@ public class Collector {
                     realV += currentGift.volume();
                     realW += currentGift.weight();
                 }
-
-                if ((realV >= 99 && realW >= 0) || (realW >= 198 && realV >= 0)) {
+//150 75
+                if ((realV >= v && realW >= w2) || (realW >= w && realV >= v2)) {
                     result.add(currentGifts);
 
                     for (int j = 0; j < currentGifts.size() - 1; j++) {
@@ -267,7 +296,7 @@ public class Collector {
                         }
                     }
 
-                    System.out.println("Bag is completed " + result.size());
+//                    System.out.println("Bag is completed " + result.size());
                     actualNow = new ArrayList<>(gifts);
 
                     final List<Gift> giftStream = actualNow.stream().filter(gift1 -> gift1.id() == 17).toList();
@@ -276,8 +305,12 @@ public class Collector {
                     continue;
                 }
             }
+            if (iter_count == 2000) {
+                System.out.println("iter");
+            }
 
-            if (i == actualNow.size() - 1 || realV >= 95 || realW >= 196) {
+            if (i == actualNow.size() - 1 || realV >= 99 || realW >= 197 || iter_count == 5000) {
+                iter_count = 0;
                 onBaseV = 0; //100
                 onBaseW = 0; //200
                 for (Gift currentGift : gifts) {
@@ -308,24 +341,24 @@ public class Collector {
             i++;
         }
         result.add(currentGifts);
-        System.out.println("");
+//        System.out.println("");
 //        gi
-        final List<Integer> v = result.stream().map(e -> e.stream().map(Gift::volume).mapToInt(a -> a).sum()).toList();
-        final List<Integer> w = result.stream().map(e -> e.stream().map(Gift::weight).mapToInt(a -> a).sum()).toList();
+//        final List<Integer> v = result.stream().map(e -> e.stream().map(Gift::volume).mapToInt(a -> a).sum()).toList();
+//        final List<Integer> w = result.stream().map(e -> e.stream().map(Gift::weight).mapToInt(a -> a).sum()).toList();
 //        System.out.println(new ObjectMapper().writeValueAsString(v));
 //        System.out.println(new ObjectMapper().writeValueAsString(result.stream().map(e -> e.stream().map(Gift::weight).mapToInt(a -> a).sum()).toList()));
-        for (int j= 0; j < v.size(); j++) {
-            System.out.println(v.get(j) + "_" + w.get(j));
-        }
+//        for (int j= 0; j < v.size(); j++) {
+//            System.out.println(v.get(j) + "_" + w.get(j));
+//        }
 
-        System.out.println("bags " + result.size() + ": " + result.stream().map(List::size).toList());
-
+//        System.out.println("bags " + result.size() + ": " + result.stream().map(List::size).toList());
+//
         final List<Gift> gifts1 = new ArrayList<>(result.stream().flatMap(e -> e.stream()).toList());
         gifts1.sort(Comparator.comparingInt(Gift::id));
         resp.gifts().sort(Comparator.comparingInt(Gift::id));
         System.out.println(resp.gifts().equals(gifts1));
-        resp.gifts().removeAll(gifts1);
-        System.out.println(resp.gifts());
+//        resp.gifts().removeAll(gifts1);
+//        System.out.println(resp.gifts());
 
         return result;
     }
