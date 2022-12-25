@@ -46,6 +46,9 @@ public class Collector {
         final Map<Child, Set<Child>> nodes = loader.toNodes();
 
         long startTime = System.currentTimeMillis();
+
+        final List<List<Gift>> lists1 = collectGiftsV3(loader.dsMap);
+
 //        98, 199
         //2  150 75
 //        final List<List<Gift>> lists = Collector.collectGiftsV3(loader.getDsMap(), 98, 199);
@@ -220,6 +223,12 @@ public class Collector {
 
         }
         return gifts.stream().max(Comparator.comparingInt(Gift::weight).reversed().thenComparing(Comparator.comparingInt(Gift::volume))).get();
+    }
+
+    //        98, 199
+    //2  150 75
+    public static List<List<Gift>> collectGiftsV3(DsMap resp) {
+        return collectGiftsV3(resp, 98, 199, 75, 150);
     }
 
     @SneakyThrows
