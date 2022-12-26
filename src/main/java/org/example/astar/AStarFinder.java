@@ -3,10 +3,12 @@ package org.example.astar;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.datsanta.Child;
 import org.example.search.Graph;
 import org.example.search.Scorer;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -16,7 +18,15 @@ public class AStarFinder<T> {
     private final Scorer<T> nextNodeScorer;
     private final Scorer<T> targetScorer;
 
+    Map<T, Map<T, List<T>>> cache = new ConcurrentHashMap<>(4096);
+
     public List<T> findRoute(T from, T to) {
+        final Map<T, List<T>> m = cache.computeIfAbsent(from, f -> new ConcurrentHashMap<>(4096));
+        final List<T> cached = m.get(to);
+        if (cached != null) {
+            return cached;
+        }
+
         Map<T, AStarNode<T>> allNodes = new HashMap<>(4096);
         Queue<AStarNode<T>> openSet = new PriorityQueue<>();
 
@@ -38,6 +48,7 @@ public class AStarFinder<T> {
                     current = allNodes.get(current.getPrevious());
                 } while (current != null);
 
+                m.put(to, route);
                 //log.debug("Route: " + route);
                 return route;
             }

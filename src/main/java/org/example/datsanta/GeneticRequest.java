@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,10 +19,11 @@ public class GeneticRequest {
 
     public static List<String> workers = List.of(
             "http://localhost:8080/search",
-            "https://727e-178-140-43-166.eu.ngrok.io/search",
-            "https://a8f5-81-94-235-186.eu.ngrok.io/search",
-            "https://3d37-178-140-43-166.eu.ngrok.io/search",
-            "https://e5a1-77-222-98-160.eu.ngrok.io/search"
+            "https://e9f2-178-140-43-166.eu.ngrok.io/search",//комп
+            "http://192.168.0.107:8080/search",
+            "https://17ca-178-140-43-166.eu.ngrok.io/search",
+            "https://6a54-81-94-235-186.eu.ngrok.io/search"
+            //"https://e5a1-77-222-98-160.eu.ngrok.io/search"
     );
     static Map<Integer, AtomicLong> lastCall = new ConcurrentHashMap<>();
 
@@ -42,8 +44,11 @@ public class GeneticRequest {
             Worker.WorkerParams workerParams = new Worker.WorkerParams(
                     nodes, matrix, generationSize, reproductionSize, maxIterations, mutationRate, tournamentSize);
             while (true) {
-                for (int i = 0; i < workers.size(); i++) {
-                    String worker = workers.get(i);
+                ArrayList<String> shuffled = new ArrayList<>(workers);
+                Collections.shuffle(shuffled);
+
+                for (int i = 0; i < shuffled.size(); i++) {
+                    String worker = shuffled.get(i);
 
                     AtomicLong atomicLastCall = lastCall.computeIfAbsent(i, (i1) -> new AtomicLong(System.currentTimeMillis()));
                     if (System.currentTimeMillis() - atomicLastCall.get() < 1000) {

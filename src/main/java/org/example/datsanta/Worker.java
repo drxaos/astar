@@ -34,7 +34,7 @@ public class Worker {
 @Controller
 class WorkerController {
 
-    private static final Semaphore available = new Semaphore(5, true);
+    private static final Semaphore available = new Semaphore(10, true);
 
 
     @ResponseBody

@@ -38,7 +38,7 @@ public class DsTest {
     static JsonLoader loader = new JsonLoader();
     static Child zero = new Child(0, 0);
     static AStarFinder<Child> finder;
-    static final Map<Centroid, List<Child>> clusters = new HashMap<>();
+    static final Map<Centroid, List<Child>> clusters = new ConcurrentHashMap<>();
     static final ArrayList<Map.Entry<Centroid, List<Child>>> clustersQueue = new ArrayList<>();
     static final ConcurrentSkipListSet<Child> notMarked = new ConcurrentSkipListSet<>();
     static final List<Child> resultPath = new ArrayList<>();
@@ -50,6 +50,7 @@ public class DsTest {
     static final ChildScorer childScorer = new ChildScorer();
     static AtomicInteger activeBestPath = new AtomicInteger(0);
     static AtomicInteger activeGenetic = new AtomicInteger(0);
+    static Map<Child, Set<Child>> nodes;
 
     public static void main(String[] args) throws Exception {
 //        MapGenerator generator = new MapGenerator();
@@ -57,24 +58,24 @@ public class DsTest {
 
         Input.run();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("X-API-Key", apiKey);
-        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
-        HttpEntity<String> entity = new HttpEntity<>(null, headers);
-        final ResponseEntity<String> exchange = new RestTemplate()
-                .exchange(
-                        new URI("https://datsanta.dats.team/json/map/" + mapId + ".json"),
-                        HttpMethod.GET,
-                        entity,
-                        String.class
-                );
-        String mapJson = exchange.getBody();
-        Files.write(Paths.get("" + mapId + "_map.json"), mapJson.getBytes());
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.add("X-API-Key", apiKey);
+//        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+//        HttpEntity<String> entity = new HttpEntity<>(null, headers);
+//        final ResponseEntity<String> exchange = new RestTemplate()
+//                .exchange(
+//                        new URI("https://datsanta.dats.team/json/map/" + mapId + ".json"),
+//                        HttpMethod.GET,
+//                        entity,
+//                        String.class
+//                );
+//        String mapJson = exchange.getBody();
+//        Files.write(Paths.get("" + mapId + "_map.json"), mapJson.getBytes());
 
 
-        //loader.load("src/main/java/org/example/datsanta/faf7ef78-41b3-4a36-8423-688a61929c08.json");
-        loader.loadJson(mapJson);
-        final Map<Child, Set<Child>> nodes = loader.toNodes();
+        loader.load("src/main/java/org/example/datsanta/faf7ef78-41b3-4a36-8423-688a61929c08.json");
+        //loader.loadJson(mapJson);
+        nodes = loader.toNodes();
 
         long startTime = System.currentTimeMillis();
 
@@ -138,7 +139,14 @@ public class DsTest {
             int targetSize = bags.get(0).size();
             int k = processingPoints.size() / targetSize;
 //            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints, bags, k, kMeanScorer, childScorer, 100, loader.getDsMap().snowAreas());
-            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints, bags, k, kMeanScorer, childScorer, 100, null);
+            final Map<Centroid, List<Child>> clustersIteration = KMeans.fit(processingPoints,
+                    bags,
+                    k,
+                    kMeanScorer,
+                    childScorer,
+                    circleLineScorer,
+                    100,
+                    loader.getDsMap().snowAreas());
 
             clusters.clear();
             clustersIteration.forEach((c, l) -> clusters.put(c, new ArrayList<>(l)));
@@ -299,25 +307,28 @@ public class DsTest {
                             cluster50entry.getKey(),
                             cluster50entry.getValue()
                     );
-                    for (int i = 0; i < 5; i++) {
-                        int finalI = i;
-                        bestPathExecutor.submit(() -> {
-                            System.out.println("recalc " + clIndex + " #" + finalI);
-                            try {
-                                bestPath(
-                                        geneticScorer,
-                                        clIndex,
-                                        cluster50entry.getKey(),
-                                        null
-                                );
-                                System.out.println("done recalc " + clIndex);
-                                synchronized (resultParts) {
-                                    saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                    boolean a = false;
+                    if (a && drawPartsSelfIntersecting.get(clIndex).get()) {
+                        for (int i = 0; i < 5; i++) {
+                            int finalI = i;
+                            bestPathExecutor.submit(() -> {
+                                System.out.println("recalc " + clIndex + " #" + finalI);
+                                try {
+                                    bestPath(
+                                            geneticScorer,
+                                            clIndex,
+                                            cluster50entry.getKey(),
+                                            null
+                                    );
+                                    System.out.println("done recalc " + clIndex);
+                                    synchronized (resultParts) {
+                                        saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                                    }
+                                } catch (InterruptedException | ExecutionException e) {
+                                    e.printStackTrace();
                                 }
-                            } catch (InterruptedException | ExecutionException e) {
-                                e.printStackTrace();
-                            }
-                        });
+                            });
+                        }
                     }
                     return result;
                 });
@@ -383,6 +394,36 @@ public class DsTest {
                                 }
                             });
                         }
+                    });
+                }
+                Thread.sleep(150);
+            }
+        });
+
+
+        Executors.newSingleThreadExecutor(tf).submit(() -> {
+            Thread.sleep(60000);
+            while (true) {
+                boolean a = false;
+                if (a || ((ThreadPoolExecutor) bestPathExecutor).getActiveCount() < 10) {
+                    clusters.forEach((c, ps) -> {
+                        bestPathExecutor.submit(() -> {
+                            try {
+                                System.out.println("redo " + c.getClIndex());
+                                bestPath(
+                                        geneticScorer,
+                                        c.getClIndex(),
+                                        c,
+                                        null
+                                );
+                                System.out.println("done " + c.getClIndex());
+                                synchronized (resultParts) {
+                                    saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                                }
+                            } catch (InterruptedException | ExecutionException e) {
+                                e.printStackTrace();
+                            }
+                        });
                     });
                 }
                 Thread.sleep(150);
@@ -657,15 +698,14 @@ public class DsTest {
 //            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 2000, 100, 1000, 0.1f, 30)));
             geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 4000, 100, 1500, 0.25f, 50)));
         } else {
-//            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 3000, 300, 3000, 0.3f, 30)));
-//            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 2000, 100, 100, 0.1f, 30)));
-//            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 8000, 100, 5000, 0.2f, 50)));
+//        geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 3000, 300, 3000, 0.3f, 30)));
             geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 5000, 200, 1000, 0.2f, 40)));
-            // geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 10000, 1000, 5000, 0.2f, 300)));
+
         }
-        if (redo || finalCluster50.size() > 30) {
+        if (redo) {
 //            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 4000, 500, 1000, 0.5f, 100)));
-            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 5000, 200, 10000, 0.2f, 40)));
+            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 10000, 300, 6000, 0.2f, 250)));
+            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 10000, 300, 6000, 0.4f, 250)));
 //            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 10000, 1000, 10000, 0.1f, 400)));
 //            geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 10000, 1000, 10000, 0.5f, 400)));
             //  geneticTasks.add(geneticExecutor.submit(() -> GeneticRequest.runSearch(finalCluster50, matrix, 20000, 2000, 20000, 0.3f, 500)));
@@ -680,14 +720,24 @@ public class DsTest {
             result.add(zero);
             return result;
         }));
-        for (int kk = 2; kk < 5; kk++) {
+        for (int kk = 2; kk < (redo ? 5 : 3); kk++) {
             int finalKk = kk;
             geneticTasks.add(geneticExecutor.submit(() -> {
                 ArrayList<Child> result = new ArrayList<>();
                 try {
                     ArrayList<Child> cluster = new ArrayList<>(finalCluster50);
                     cluster.remove(zero);
-                    Map<Centroid, List<Child>> subClusters = KMeans.fit(cluster, null, finalKk, childScorer, childScorer, 100, null);
+                    Map<Centroid, List<Child>> subClusters = KMeans.fit(cluster,
+                            null,
+                            finalKk,
+                            childScorer,
+                            childScorer,
+                            geneticScorer,
+                            100,
+                            loader.getDsMap().snowAreas());
+                    if (subClusters.values().stream().anyMatch(sc -> sc.size() < 4)) {
+                        return new ArrayList<>(finalCluster50);
+                    }
                     List<List<Child>> entries = new ArrayList<>(subClusters.values().stream().toList());
                     for (int i = 0; i < entries.size(); i++) {
                         List<Child> e = entries.get(i);
@@ -713,13 +763,14 @@ public class DsTest {
                                 double cost = geneticScorer.computeCost(route);
                                 subMatrix[i1][j1] = (int) cost;
                                 subMatrix[j1][i1] = (int) cost;
+
                                 if ((i1 == 1 && j1 == 0) || (i1 == 0 && j1 != 1) || (i1 != 0 && j1 == 1)) {
                                     cost = 1000000000;
                                     subMatrix[i1][j1] = (int) cost;
                                 }
                             }
                         }
-                        ArrayList<Child> subResult = GeneticRequest.runSearch(subCluster, subMatrix, 4000, 100, 1500, 0.25f, 50);
+                        ArrayList<Child> subResult = GeneticRequest.runSearch(subCluster, subMatrix, 5000, 200, 2000, 0.25f, 70);
                         if (i == 0) {
                             while (subResult.remove(entries.get(i + 1).get(0))) ;
                             while (subResult.remove(zero)) ;
@@ -733,9 +784,27 @@ public class DsTest {
                         result.addAll(subResult);
                     }
 
-                    result.add(0, zero);
-                    result.add(zero);
-                    return result;
+
+                    while (!nodes.containsKey(result.get(0))) {
+                        result.remove(0);
+                    }
+                    while (!nodes.containsKey(result.get(result.size() - 1))) {
+                        result.remove(result.size() - 1);
+                    }
+
+                    List<Child> prep = finder.findRoute(zero, result.get(0));
+                    List<Child> app = finder.findRoute(result.get(result.size() - 1), zero);
+
+                    ArrayList<Child> result2 = new ArrayList<>();
+                    result2.addAll(prep);
+                    result2.addAll(result);
+                    result2.addAll(app);
+
+                    if (!result2.get(0).equals(zero) || !result2.get(result2.size() - 1).equals(zero) || result2.size() < 5 || finalCluster50.stream().anyMatch(cp -> !result2.contains(cp))) {
+                        return new ArrayList<>(finalCluster50);
+                    }
+
+                    return result2;
                 } catch (Exception e) {
                     e.printStackTrace();
                     return new ArrayList<>(finalCluster50);
@@ -767,6 +836,9 @@ public class DsTest {
 //                        return geneticScorer.computeCost(route);
 //                    })).orElse(null);
             Child nearest = geneticPath.remove(0);
+            while (!nodes.containsKey(nearest)) {
+                nearest = geneticPath.remove(0);
+            }
             final List<Child> route = finder.findRoute(current, nearest);
             notMarked.remove(nearest);
             cluster1.remove(nearest);
