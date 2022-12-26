@@ -1,6 +1,5 @@
 package org.example.datsanta.part2;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.springframework.http.HttpEntity;
@@ -11,10 +10,9 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.net.URI;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -94,9 +92,14 @@ public class Part2Main {
         best.put(new ChildType(female, 9), sweets);
         best.put(new ChildType(female, 10), books);
 
-        for (GiftType giftType : values()) {
-            ChildType childType = new ChildType(female, 1);
-            collect("" + childType.str() + System.currentTimeMillis(), step2Map, best, childType, giftType);
+        long start = System.currentTimeMillis();
+        for (ChildType childType : best.keySet().stream().sorted(Comparator.comparing(ct -> -types.get(ct).size())).toList()) {
+            for (GiftType giftType : values()) {
+                if (best.get(childType).equals(giftType)) {
+                    continue;
+                }
+                collect("" + childType.str() + "_" + start, step2Map, best, childType, giftType);
+            }
         }
     }
 
@@ -127,27 +130,74 @@ public class Part2Main {
         Part2Result part2Result = new Part2Result(mapId, presentings);
         String json = (new ObjectMapper().writeValueAsString(part2Result));
 
-        HttpComponentsClientHttpRequestFactory httpRequestFactory = new HttpComponentsClientHttpRequestFactory();
-        httpRequestFactory.setConnectionRequestTimeout(50000);
-        httpRequestFactory.setConnectTimeout(50000);
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("X-API-Key", apiKey);
-        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
-        HttpEntity<Part2Result> entity = new HttpEntity<>(part2Result, headers);
-        final ResponseEntity<RoundPostResult> exchange = new RestTemplate(
-                httpRequestFactory
-        )
-                .exchange(
-                        "https://datsanta.dats.team/api/round2",
-                        HttpMethod.POST,
-                        entity,
-                        RoundPostResult.class
-                );
-        RoundPostResult mapJson = exchange.getBody();
-        System.out.println(mapJson);
+        String roundId = null;
+        AtomicBoolean sended = new AtomicBoolean(false);
+        while (!sended.get()) {
+            try {
+                HttpComponentsClientHttpRequestFactory httpRequestFactory = new HttpComponentsClientHttpRequestFactory();
+                httpRequestFactory.setConnectionRequestTimeout(50000);
+                httpRequestFactory.setConnectTimeout(50000);
+                HttpHeaders headers = new HttpHeaders();
+                headers.add("X-API-Key", apiKey);
+                headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+                HttpEntity<Part2Result> entity = new HttpEntity<>(part2Result, headers);
+                final ResponseEntity<RoundPostResult> exchange = new RestTemplate(
+                        httpRequestFactory
+                )
+                        .exchange(
+                                "https://datsanta.dats.team/api/round2",
+                                HttpMethod.POST,
+                                entity,
+                                RoundPostResult.class
+                        );
+                RoundPostResult mapJson = exchange.getBody();
+                System.out.println(mapJson);
 
-        try (FileOutputStream fileOutputStream = new FileOutputStream(name + ".txt", true)) {
-            fileOutputStream.write(("" + tryingCt.gender + ":" + tryingCt.age + ":" + tryingGt + ":" + mapJson.roundId + "\n").getBytes());
+                if (mapJson != null && mapJson.roundId != null) {
+                    sended.set(true);
+                    roundId = mapJson.roundId;
+
+                    try (FileOutputStream fileOutputStream = new FileOutputStream(name + ".txt", true)) {
+                        fileOutputStream.write(("" + tryingCt.gender + ":" + tryingCt.age + ":" + tryingGt + ":" + mapJson.roundId + "\n").getBytes());
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            Thread.sleep(5000);
+        }
+
+        AtomicBoolean received = new AtomicBoolean(false);
+        while (!received.get()) {
+            try {
+                HttpComponentsClientHttpRequestFactory httpRequestFactory = new HttpComponentsClientHttpRequestFactory();
+                httpRequestFactory.setConnectionRequestTimeout(50000);
+                httpRequestFactory.setConnectTimeout(50000);
+                HttpHeaders headers = new HttpHeaders();
+                headers.add("X-API-Key", apiKey);
+                headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+                HttpEntity<Part2Result> entity = new HttpEntity<>(part2Result, headers);
+                final ResponseEntity<RoungGetResult> exchange = new RestTemplate(httpRequestFactory)
+                        .exchange(
+                                "https://datsanta.dats.team/api/round2/" + roundId,
+                                HttpMethod.GET,
+                                entity,
+                                RoungGetResult.class
+                        );
+                RoungGetResult mapJson = exchange.getBody();
+                System.out.println(mapJson);
+
+                if (mapJson != null && mapJson.data != null && mapJson.data.status != null && mapJson.data.status.equals("processed")) {
+                    received.set(true);
+
+                    try (FileOutputStream fileOutputStream = new FileOutputStream(name + ".txt", true)) {
+                        fileOutputStream.write(("" + tryingCt.gender + ":" + tryingCt.age + ":" + tryingGt + ":" + roundId + ":" + mapJson.data.total_happy + "\n").getBytes());
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            Thread.sleep(5000);
         }
     }
 }
