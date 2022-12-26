@@ -6,6 +6,6 @@ import java.util.List;
 
 @Data
 public class Step2Map {
-    List<Gift> gifts;
-    List<Child> children;
+    List<Gift2> gifts;
+    List<Child2> children;
 }
