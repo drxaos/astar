@@ -40,6 +40,7 @@ public class KMeans {
             int k,
             Scorer<Child> distance,
             ChildScorer directDistance,
+            CircleLineScorer circleLineScorer,
             int maxIterations,
             List<SnowArea> snowAreas
     ) {
@@ -52,6 +53,15 @@ public class KMeans {
 
         List<Centroid> centroids = new ArrayList<>();
         if (snowAreas != null) {
+            if (snowAreas.size() > k) {
+                List<Child> finalRecords = records;
+                snowAreas = snowAreas.stream().filter(sn -> {
+                            return finalRecords.stream().anyMatch(r -> {
+                                return directDistance.computeCost(r, new Child(sn.x(), sn.y())) < sn.r();
+                            });
+                        }).sorted(Comparator.comparing(sn -> -directDistance.computeCost(new Child(0, 0), new Child(sn.x(), sn.y()))))
+                        .limit(k).toList();
+            }
             centroids.addAll(snowAreas.stream().map(s -> new Centroid(new HashMap<>(Map.of("x", (double) s.x(), "y", (double) s.y())))).toList());
         }
         centroids.addAll(randomCentroids(records, k - centroids.size()));
@@ -75,13 +85,25 @@ public class KMeans {
 
             // in each iteration we should find the nearest centroid for each record
             for (Child record : records) {
-                Centroid centroid = nearestCentroid(clusters, record, centroids, distance);
+
+                Centroid centroid;
+                if (i < maxIterations / 2) {
+                    centroid = nearestCentroid(Map.of(), record, centroids, distance, directDistance, snowAreas);
+                } else {
+                    centroid = nearestCentroid(clusters, record, centroids, circleLineScorer, directDistance, snowAreas);
+                }
+
                 assignToCluster(clusters, record, centroid);
             }
 
             // if the assignment does not change, then the algorithm terminates
             boolean shouldTerminate = isLastIteration || clusters.equals(lastState);
             lastState = clusters;
+
+//            DsTest.clusters.clear();
+//            lastState.forEach((c, l) -> DsTest.clusters.put(c, new ArrayList<>(l)));
+
+
             if (shouldTerminate) {
                 break;
             }
@@ -102,7 +124,7 @@ public class KMeans {
                 final ArrayList<Child> processingRecords = new ArrayList<>(records);
                 processingRecords.removeAll(furtherCluster);
                 while (furtherCluster.size() < targetCount) {
-                    Child record = nearestRecord(sortedCentroids.get(0), processingRecords, distance);
+                    Child record = nearestRecord(sortedCentroids.get(0), furtherCluster, processingRecords, circleLineScorer);
                     processingRecords.remove(record);
                     assignToCluster(lastState, record, sortedCentroids.get(0));
                 }
@@ -113,6 +135,10 @@ public class KMeans {
                 }
             }
         }
+
+//        DsTest.clusters.clear();
+//        lastState.forEach((c, l) -> DsTest.clusters.put(c, new ArrayList<>(l)));
+
         //
         //        clusters = new HashMap<>();
         //
@@ -245,22 +271,40 @@ public class KMeans {
      * nearest one to the given record.
      *
      * @param clusters
-     * @param record    The feature vector to find a centroid for.
-     * @param centroids Collection of all centroids.
-     * @param distance  To calculate the distance between two items.
+     * @param record         The feature vector to find a centroid for.
+     * @param centroids      Collection of all centroids.
+     * @param distance       To calculate the distance between two items.
+     * @param directDistance
+     * @param snowAreas
      * @return The nearest centroid to the given feature vector.
      */
-    private static Centroid nearestCentroid(Map<Centroid, List<Child>> clusters, Child record, List<Centroid> centroids, Scorer<Child> distance) {
+    private static Centroid nearestCentroid(Map<Centroid, List<Child>> clusters, Child record, List<Centroid> centroids, Scorer<Child> distance, ChildScorer directDistance, List<SnowArea> snowAreas) {
         double minimumDistance = Double.MAX_VALUE;
         Centroid nearest = null;
 
         for (Centroid centroid : centroids) {
             //if (clusters.getOrDefault(centroid, List.of()).size() > centroid.getCount() - 1) {continue;}
 
-            double currentDistance = distance.computeCost(record, centroid.getChild());
+            double currentDistanceToCentroid = distance.computeCost(record, centroid.getChild());
 
-            if (currentDistance < minimumDistance) {
-                minimumDistance = currentDistance;
+            List<Child> points = clusters.get(centroid);
+
+            SnowArea recordInsnowArea = snowAreas.stream().filter(sn ->
+                    directDistance.computeCost(new Child(sn.x(), sn.y()), record) <= sn.r()
+            ).findFirst().orElse(null);
+
+            double currentDistanceToPoint = points != null ? points.stream().mapToDouble(p -> {
+                        if (recordInsnowArea != null) {
+                            if (directDistance.computeCost(new Child(recordInsnowArea.x(), recordInsnowArea.y()), record) <= recordInsnowArea.r()) {
+                                return 0;
+                            }
+                        }
+                        return (distance.computeCost(record, p)+currentDistanceToCentroid)/3;
+                    })
+                    .min().orElse(currentDistanceToCentroid) : currentDistanceToCentroid;
+
+            if (currentDistanceToPoint < minimumDistance) {
+                minimumDistance = currentDistanceToPoint;
                 nearest = centroid;
             }
         }
@@ -268,17 +312,23 @@ public class KMeans {
         return nearest;
     }
 
-    private static Child nearestRecord(Centroid centroid, List<Child> records, Scorer<Child> distance) {
+    private static Child nearestRecord(Centroid centroid, List<Child> clusterPoints, List<Child> records, Scorer<Child> distance) {
         double minimumDistance = Double.MAX_VALUE;
         Child nearest = null;
 
         for (Child record : records) {
             //if (clusters.getOrDefault(centroid, List.of()).size() > centroid.getCount() - 1) {continue;}
 
-            double currentDistance = distance.computeCost(record, centroid.getChild());
+            double currentDistanceToCentroid = distance.computeCost(record, centroid.getChild());
 
-            if (currentDistance < minimumDistance) {
-                minimumDistance = currentDistance;
+//            double currentDistanceToPoint = clusterPoints != null ? clusterPoints.stream().mapToDouble(p -> {
+//                        return distance.computeCost(record, p);
+//                    })
+//                    .min().orElse(currentDistanceToCentroid) : currentDistanceToCentroid;
+
+
+            if (currentDistanceToCentroid < minimumDistance) {
+                minimumDistance = currentDistanceToCentroid;
                 nearest = record;
             }
         }
@@ -286,14 +336,14 @@ public class KMeans {
         return nearest;
     }
 
-    private static Child nearestRecord(Child centroid, List<Child> records, Scorer<Child> distance) {
+    private static Child nearestRecord(Child child, List<Child> records, Scorer<Child> distance) {
         double minimumDistance = Double.MAX_VALUE;
         Child nearest = null;
 
         for (Child record : records) {
             //if (clusters.getOrDefault(centroid, List.of()).size() > centroid.getCount() - 1) {continue;}
 
-            double currentDistance = distance.computeCost(record, centroid);
+            double currentDistance = distance.computeCost(record, child);
 
             if (currentDistance < minimumDistance) {
                 minimumDistance = currentDistance;

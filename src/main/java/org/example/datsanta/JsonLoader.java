@@ -44,10 +44,10 @@ public class JsonLoader {
             // 1000/(cos(pi/50))=1001.97717
             // 1000/(cos(pi/70))=1001.00795
             // 1000/(cos(pi/80))=1000.77156
-            int N = 80;
+            int N = Math.min(130, (int) (snowArea.r() * 3.14 * 2 / 50));
             for (int i = 0; i < N; i++) {
-                final int x = snowArea.x() + (int) ((snowArea.r() + 4) * Math.cos(2 * Math.PI * i / N));
-                final int y = snowArea.y() + (int) ((snowArea.r() + 4) * Math.sin(2 * Math.PI * i / N));
+                final int x = snowArea.x() + (int) ((snowArea.r() + 3) * Math.cos(2 * Math.PI * i / N));
+                final int y = snowArea.y() + (int) ((snowArea.r() + 3) * Math.sin(2 * Math.PI * i / N));
                 if (x >= 0 && x < 10000 && y >= 0 && y < 10000) {
                     children.add(new Child(x, y));
                 }
