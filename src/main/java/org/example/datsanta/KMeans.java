@@ -53,18 +53,18 @@ public class KMeans {
         })).toList();
 
         List<Centroid> centroids = new ArrayList<>();
-        if (snowAreas != null) {
-            if (snowAreas.size() > k) {
-                List<Child> finalRecords = records;
-                snowAreas = snowAreas.stream().filter(sn -> {
-                            return finalRecords.stream().anyMatch(r -> {
-                                return directDistance.computeCost(r, new Child(sn.x(), sn.y())) < sn.r();
-                            });
-                        }).sorted(Comparator.comparing(sn -> -directDistance.computeCost(new Child(0, 0), new Child(sn.x(), sn.y()))))
-                        .limit(k).toList();
-            }
-            centroids.addAll(snowAreas.stream().map(s -> new Centroid(new HashMap<>(Map.of("x", (double) s.x(), "y", (double) s.y())))).toList());
-        }
+//        if (snowAreas != null) {
+//            if (snowAreas.size() > k) {
+//                List<Child> finalRecords = records;
+//                snowAreas = snowAreas.stream().filter(sn -> {
+//                            return finalRecords.stream().anyMatch(r -> {
+//                                return directDistance.computeCost(r, new Child(sn.x(), sn.y())) < sn.r();
+//                            });
+//                        }).sorted(Comparator.comparing(sn -> -directDistance.computeCost(new Child(0, 0), new Child(sn.x(), sn.y()))))
+//                        .limit(k).toList();
+//            }
+//            centroids.addAll(snowAreas.stream().map(s -> new Centroid(new HashMap<>(Map.of("x", (double) s.x(), "y", (double) s.y())))).toList());
+//        }
         centroids.addAll(randomCentroids(records, k - centroids.size()));
         Map<Centroid, List<Child>> clusters = new HashMap<>();
         Map<Centroid, List<Child>> lastState = new HashMap<>();
@@ -88,11 +88,11 @@ public class KMeans {
             for (Child record : records) {
 
                 Centroid centroid;
-                if (i < maxIterations / 2) {
+//                if (i < maxIterations / 2) {
                     centroid = nearestCentroid(Map.of(), record, centroids, distance, directDistance, snowAreas);
-                } else {
-                    centroid = nearestCentroid(clusters, record, centroids, circleLineScorer, directDistance, snowAreas);
-                }
+//                } else {
+//                    centroid = nearestCentroid(clusters, record, centroids, circleLineScorer, directDistance, snowAreas);
+//                }
 
                 assignToCluster(clusters, record, centroid);
             }
@@ -125,7 +125,7 @@ public class KMeans {
                 final ArrayList<Child> processingRecords = new ArrayList<>(records);
                 processingRecords.removeAll(furtherCluster);
                 while (furtherCluster.size() < targetCount) {
-                    Child record = nearestRecord(sortedCentroids.get(0), furtherCluster, processingRecords, circleLineScorer);
+                    Child record = nearestRecord(sortedCentroids.get(0), furtherCluster, processingRecords, childScorer);
                     processingRecords.remove(record);
                     assignToCluster(lastState, record, sortedCentroids.get(0));
                 }
@@ -304,8 +304,8 @@ public class KMeans {
                     })
                     .min().orElse(currentDistanceToCentroid) : currentDistanceToCentroid;
 
-            if (currentDistanceToPoint < minimumDistance) {
-                minimumDistance = currentDistanceToPoint;
+            if (currentDistanceToCentroid < minimumDistance) {
+                minimumDistance = currentDistanceToCentroid;
                 nearest = centroid;
             }
         }

@@ -4,7 +4,7 @@ import java.util.List;
 
 public record DsResult(
         String mapID,
-        List<Child> moves,
+        List<ChildResult> moves,
         List<List<Integer>> stackOfBags
 ) {
 }

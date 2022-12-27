@@ -167,8 +167,8 @@ public class DsTest {
 //        };
 
 
-        final ForkJoinPool forkJoinPool1 = new ForkJoinPool(12);
-        final ForkJoinTask<?> task1 = forkJoinPool1.submit(() -> {
+//        final ForkJoinPool forkJoinPool1 = new ForkJoinPool(12);
+//        final ForkJoinTask<?> task1 = forkJoinPool1.submit(() -> {
         final ArrayList<Child> processingPoints = new ArrayList<>(loader.dsMap.children());
         while (!processingPoints.isEmpty()) {
             int targetSize = bags.get(0).size();
@@ -256,7 +256,7 @@ public class DsTest {
         clusters.clear();
         clustersQueue.forEach(c -> clusters.put(c.getKey(), new ArrayList<>(c.getValue())));
         System.out.println("clusters fixed");
-        }); // FORKJOIN
+//        }); // FORKJOIN
 
         long kmeanTime = System.currentTimeMillis();
         System.out.println("kmeanTime: " + (kmeanTime - bagsTime));
@@ -322,7 +322,7 @@ public class DsTest {
         var geneticScorer = circleLineScorer;
 
         List<Future<List<Child>>> tasks = new ArrayList<>();
-        if (false) {
+        if (true) {
             AtomicInteger clusterIndex = new AtomicInteger();
 
             List<Callable<List<Child>>> runnables = new ArrayList<>();
@@ -656,7 +656,7 @@ public class DsTest {
 
         DsResult dsResult = new DsResult(
                 mapId,
-                deduplicated,
+                deduplicated.stream().map(c -> new ChildResult(c.x(), c.y())).toList(),
                 resultBags
         );
 
@@ -757,6 +757,7 @@ public class DsTest {
         }));
         for (int kk = 2; kk < (redo ? 5 : 3); kk++) {
             int finalKk = kk;
+            List<Child> finalCluster = cluster1;
             geneticTasks.add(geneticExecutor.submit(() -> {
                 ArrayList<Child> result = new ArrayList<>();
                 try {
@@ -794,8 +795,16 @@ public class DsTest {
                                 if (i1 == j1) {
                                     continue;
                                 }
-                                final List<Child> route = finder.findRoute(subCluster.get(i1), subCluster.get(j1));
-                                double cost = geneticScorer.computeCost(route);
+//                                final List<Child> route = finder.findRoute(subCluster.get(i1), subCluster.get(j1));
+//                                double cost = geneticScorer.computeCost(route);
+
+
+                                Child from = subCluster.get(i1);
+                                Child to = subCluster.get(j1);
+                                int mi1 = finalCluster.indexOf(from);
+                                int mj1 = finalCluster.indexOf(to);
+                                double cost = matrix[mi1][mj1];
+
                                 subMatrix[i1][j1] = (int) cost;
                                 subMatrix[j1][i1] = (int) cost;
 

@@ -127,12 +127,17 @@ public class CircleLineScorer implements Scorer<Child> {
         final double insideCost = circles.stream().map(c -> getInsideCost(pointA, pointB, new Child(c.x(), c.y()), c.r())).mapToDouble(r -> r).sum();
         final double outsideCost = distance(ChildDouble.from(pointA), ChildDouble.from(pointB));
 
-        double angle = angle(pointB.x() - pointA.x(), pointB.y() - pointA.y());
-        double xx = Math.cos(angle) * (1-0.636);
-        double yy = Math.sin(angle);
-        double outsideCostWind = Math.sqrt(Math.pow(xx, 2) + Math.pow(yy, 2)) * outsideCost;
+//        double angle = angle(pointB.x() - pointA.x(), pointB.y() - pointA.y());
+//        double xx = Math.cos(angle);
+//        if (xx > 0) {
+//            xx -= xx * (0.636);
+//        } else {
+//            xx += xx * (0.636);
+//        }
+//        double yy = Math.sin(angle);
+//        double outsideCostWind = Math.sqrt(Math.pow(xx, 2) + Math.pow(yy, 2)) * outsideCost;
 
-        return insideCost + outsideCostWind;
+        return insideCost + outsideCost;
     }
 
     @Override

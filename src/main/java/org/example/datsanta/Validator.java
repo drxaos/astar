@@ -22,7 +22,7 @@ public class Validator {
         DsMap dsMap = new ObjectMapper().readValue(new File(mapFile), DsMap.class);
 
         HashSet<Child> childrenSet = new HashSet<>(dsMap.children());
-        List<Child> moves1 = dsResult.moves();
+        List<ChildResult> moves1 = dsResult.moves();
         while(!childrenSet.contains(moves1.get(moves1.size()-1))){
             moves1.remove(moves1.size()-1);
         }
@@ -34,9 +34,9 @@ public class Validator {
         //System.out.println("bag " + bag.size());
 
         HashSet<Child> remain = new HashSet<>(dsMap.children());
-        List<Child> moves = dsResult.moves();
+        List<ChildResult> moves = dsResult.moves();
         for (int i = 0; i < moves.size(); i++) {
-            Child move = moves.get(i);
+            ChildResult move = moves.get(i);
             if (remain.remove(move)) {
                 if (bag.size() > 0) {
                     bag.remove(0);

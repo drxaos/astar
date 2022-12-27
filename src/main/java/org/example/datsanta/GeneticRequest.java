@@ -19,11 +19,10 @@ public class GeneticRequest {
 
     public static List<String> workers = List.of(
             "http://localhost:8080/search",
-            "https://e9f2-178-140-43-166.eu.ngrok.io/search",//комп
+            "https://815f-178-140-43-166.eu.ngrok.io/search",
             "http://192.168.0.107:8080/search",
-            "https://17ca-178-140-43-166.eu.ngrok.io/search",
-            "https://6a54-81-94-235-186.eu.ngrok.io/search"
-            //"https://e5a1-77-222-98-160.eu.ngrok.io/search"
+            "https://eafb-178-140-43-166.eu.ngrok.io/search",
+            "https://006a-81-94-235-186.eu.ngrok.io/search"
     );
     static Map<Integer, AtomicLong> lastCall = new ConcurrentHashMap<>();
 
