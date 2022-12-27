@@ -145,16 +145,16 @@ public class Collector {
     }
 
     @SneakyThrows
-    public static List<List<Gift>> collectGiftsV2(DsMap resp) {
+    public static List<List<Presenting>> collectGiftsV2(List<Presenting> resp) {
 
-        final List<Gift> gifts = resp.gifts();
+        final List<Presenting> gifts =new ArrayList<>(resp);
 
-        final ArrayList<Gift> forCheck = new ArrayList<>(gifts);
-        gifts.sort(Comparator.comparing(Gift::volume).reversed());
+        final ArrayList<Presenting> forCheck = new ArrayList<>(gifts);
+        gifts.sort(Comparator.comparing(Presenting::getVolume).reversed());
 //                .thenComparing(Gift::weight));
 
 
-        List<List<Gift>> result = new ArrayList<>();
+        List<List<Presenting>> result = new ArrayList<>();
         result.add(new ArrayList<>());
 
         int currentVolume = 0;
@@ -162,50 +162,50 @@ public class Collector {
         boolean q = true;
 //        for (int i = 0; i < gifts.size(); i++) {
         while (!gifts.isEmpty()) {
-            final Gift gift = getGift(gifts, q);
+            final Presenting gift = getGift(gifts, q);
             q = !q;
 
-            if (currentVolume + gift.volume() <= 100 && currentWeight + gift.weight() <= 200) {
+            if (currentVolume + gift.getVolume() <= 100 && currentWeight + gift.getWeight() <= 200) {
                 result.get(result.size() - 1).add(gift);
-                currentVolume += gift.volume();
-                currentWeight += gift.weight();
+                currentVolume += gift.getVolume();
+                currentWeight += gift.getWeight();
                 gifts.remove(gift);
             } else {
                 final int finalCurrentWeight = currentWeight;
                 final int finalCurrentVolume = currentVolume;
 
-                final Optional<Gift> optimum = gifts.stream()
-                        .filter(e -> (e.weight() == 200 - finalCurrentWeight && e.volume() == 100 - finalCurrentVolume))
+                final Optional<Presenting> optimum = gifts.stream()
+                        .filter(e -> (e.getWeight() == 200 - finalCurrentWeight && e.getVolume() == 100 - finalCurrentVolume))
                         .findFirst();
 
-                final Optional<Gift> optimumV = gifts.stream()
-                        .filter(e -> (e.weight() <= 200 - finalCurrentWeight && e.volume() == 100 - finalCurrentVolume))
-                        .max(Comparator.comparingInt(Gift::weight).thenComparing(Comparator.comparingInt(Gift::volume)));
+                final Optional<Presenting> optimumV = gifts.stream()
+                        .filter(e -> (e.getWeight() <= 200 - finalCurrentWeight && e.getVolume() == 100 - finalCurrentVolume))
+                        .max(Comparator.comparingInt(Presenting::getWeight).thenComparing(Comparator.comparingInt(Presenting::getVolume)));
 
-                final Optional<Gift> first = gifts.stream()
-                        .filter(e -> (e.weight() <= 200 - finalCurrentWeight && e.volume() <= 100 - finalCurrentVolume))
-                        .max(Comparator.comparingInt(Gift::weight).thenComparing(Comparator.comparingInt(Gift::volume)));
+                final Optional<Presenting> first = gifts.stream()
+                        .filter(e -> (e.getWeight() <= 200 - finalCurrentWeight && e.getVolume() <= 100 - finalCurrentVolume))
+                        .max(Comparator.comparingInt(Presenting::getWeight).thenComparing(Comparator.comparingInt(Presenting::getVolume)));
 
                 if (optimum.isPresent()) {
                     result.get(result.size() - 1).add(optimum.get());
-                    currentVolume += optimum.get().volume();
-                    currentWeight += optimum.get().weight();
+                    currentVolume += optimum.get().getVolume();
+                    currentWeight += optimum.get().getWeight();
                     gifts.remove(optimum.get());
                 } else if (optimumV.isPresent()) {
                     result.get(result.size() - 1).add(optimumV.get());
-                    currentVolume += optimumV.get().volume();
-                    currentWeight += optimumV.get().weight();
+                    currentVolume += optimumV.get().getVolume();
+                    currentWeight += optimumV.get().getWeight();
                     gifts.remove(optimumV.get());
                 } else if (first.isPresent()) {
                     result.get(result.size() - 1).add(first.get());
-                    currentVolume += first.get().volume();
-                    currentWeight += first.get().weight();
+                    currentVolume += first.get().getVolume();
+                    currentWeight += first.get().getWeight();
                     gifts.remove(first.get());
                 } else {
                     result.add(new ArrayList<>());
                     result.get(result.size() - 1).add(gift);
-                    currentVolume = gift.volume();
-                    currentWeight = gift.weight();
+                    currentVolume = gift.getVolume();
+                    currentWeight = gift.getWeight();
                     gifts.remove(gift);
                 }
             }
@@ -213,14 +213,14 @@ public class Collector {
 
         final List<Pair> pairs = result.stream()
                 .map(e -> {
-                    return new Pair(e.stream().mapToInt(r -> r.weight()).sum(), e.stream().mapToInt(r -> r.volume()).sum());
+                    return new Pair(e.stream().mapToInt(r -> r.getWeight()).sum(), e.stream().mapToInt(r -> r.getVolume()).sum());
                 })
                 .sorted((e1, e2) -> Integer.compare(e2.w, e1.w))
                 .toList();
 
 //        System.out.println(new ObjectMapper().writeValueAsString(result));
-        final List<Integer> v = result.stream().map(e -> e.stream().map(Gift::volume).mapToInt(a -> a).sum()).toList();
-        final List<Integer> w = result.stream().map(e -> e.stream().map(Gift::weight).mapToInt(a -> a).sum()).toList();
+        final List<Integer> v = result.stream().map(e -> e.stream().map(Presenting::getVolume).mapToInt(a -> a).sum()).toList();
+        final List<Integer> w = result.stream().map(e -> e.stream().map(Presenting::getWeight).mapToInt(a -> a).sum()).toList();
 //        System.out.println(new ObjectMapper().writeValueAsString(v));
 //        System.out.println(new ObjectMapper().writeValueAsString(result.stream().map(e -> e.stream().map(Gift::weight).mapToInt(a -> a).sum()).toList()));
         for (int i = 0; i < v.size(); i++) {
@@ -229,25 +229,25 @@ public class Collector {
 
         System.out.println("bags " + result.size() + ": " + result.stream().map(List::size).toList());
 
-        final List<Gift> gifts1 = new ArrayList<>(result.stream().flatMap(e -> e.stream()).toList());
-        gifts1.sort(Comparator.comparingInt(Gift::id));
-        forCheck.sort(Comparator.comparingInt(Gift::id));
-        System.out.println(forCheck.equals(gifts1));
+//        final List<Presenting> gifts1 = new ArrayList<>(result.stream().flatMap(e -> e.stream()).toList());
+//        gifts1.sort(Comparator.comparingInt(Presenting::id));
+//        forCheck.sort(Comparator.comparingInt(Presenting::id));
+//        System.out.println(forCheck.equals(gifts1));
         return result;
     }
 
-    private static Gift getGift(final List<Gift> gifts, boolean q) {
+    private static Presenting getGift(final List<Presenting> gifts, boolean q) {
         if (!q) {
-            return gifts.stream().max(Comparator.comparingInt(Gift::weight).thenComparing(Comparator.comparingInt(Gift::volume))).get();
+            return gifts.stream().max(Comparator.comparingInt(Presenting::getWeight).thenComparing(Comparator.comparingInt(Presenting::getVolume))).get();
 
         }
-        return gifts.stream().max(Comparator.comparingInt(Gift::weight).reversed().thenComparing(Comparator.comparingInt(Gift::volume))).get();
+        return gifts.stream().max(Comparator.comparingInt(Presenting::getWeight).reversed().thenComparing(Comparator.comparingInt(Presenting::getVolume))).get();
     }
 
     //98 199 150 75 bags 47
     //97 197 89 164 bags 46
     public static List<List<Presenting>> collectGiftsV3(List<Presenting> resp) {
-        return collectGiftsV3(resp, 97, 197, 89, 164);
+        return collectGiftsV3(resp, 97, 197, 72, 165);
     }
 
     @SneakyThrows
