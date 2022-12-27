@@ -51,8 +51,8 @@ public class DsTest {
     static final List<List<Child>> resultParts = new ArrayList<>();
     static final List<List<Child>> drawParts = new ArrayList<>();
     static final List<AtomicBoolean> drawPartsSelfIntersecting = new ArrayList<>();
-    static ExecutorService geneticExecutor = Executors.newFixedThreadPool(12 * GeneticRequest.workers.size(), tf);
-    static ExecutorService bestPathExecutor = Executors.newFixedThreadPool(50, tf);
+    static ExecutorService geneticExecutor = Executors.newFixedThreadPool(10 * GeneticRequest.workers.size(), tf);
+    static ExecutorService bestPathExecutor = Executors.newFixedThreadPool(10 * GeneticRequest.workers.size(), tf);
     static final ChildScorer childScorer = new ChildScorer();
     static AtomicInteger activeBestPath = new AtomicInteger(0);
     static AtomicInteger activeGenetic = new AtomicInteger(0);
