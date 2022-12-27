@@ -2,11 +2,7 @@ package org.example.datsanta;
 
 import org.example.search.Scorer;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class CircleLineScorer implements Scorer<Child> {
@@ -119,6 +115,10 @@ public class CircleLineScorer implements Scorer<Child> {
         }
     }
 
+    public static double angle(double x, double y) {
+        return Math.atan2(y, x);
+    }
+
     public static double getCost(
             Child pointA,
             Child pointB,
@@ -126,7 +126,13 @@ public class CircleLineScorer implements Scorer<Child> {
     ) {
         final double insideCost = circles.stream().map(c -> getInsideCost(pointA, pointB, new Child(c.x(), c.y()), c.r())).mapToDouble(r -> r).sum();
         final double outsideCost = distance(ChildDouble.from(pointA), ChildDouble.from(pointB));
-        return insideCost + outsideCost;
+
+        double angle = angle(pointB.x() - pointA.x(), pointB.y() - pointA.y());
+        double xx = Math.cos(angle) * (1-0.636);
+        double yy = Math.sin(angle);
+        double outsideCostWind = Math.sqrt(Math.pow(xx, 2) + Math.pow(yy, 2)) * outsideCost;
+
+        return insideCost + outsideCostWind;
     }
 
     @Override

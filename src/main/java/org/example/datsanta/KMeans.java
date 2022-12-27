@@ -1,5 +1,6 @@
 package org.example.datsanta;
 
+import org.example.datsanta.part2.Presenting;
 import org.example.search.Scorer;
 
 import java.util.*;
@@ -36,7 +37,7 @@ public class KMeans {
      */
     public static Map<Centroid, List<Child>> fit(
             List<Child> records,
-            List<List<Gift>> bags,
+            List<List<Presenting>> bags,
             int k,
             Scorer<Child> distance,
             ChildScorer directDistance,

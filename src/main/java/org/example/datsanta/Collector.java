@@ -3,112 +3,98 @@ package org.example.datsanta;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.SneakyThrows;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
+import org.example.datsanta.part2.Presenting;
 
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import static org.example.datsanta.DsTest.tf;
 
 public class Collector {
     static String apiKey = "90a75999-2d77-41d9-aa22-26a85571da53";
     static String mapId = "faf7ef78-41b3-4a36-8423-688a61929c08";
 
-    public static void main(String[] args) throws Exception {
-        JsonLoader loader = new JsonLoader();
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("X-API-Key", apiKey);
-        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
-        HttpEntity<String> entity = new HttpEntity<>(null, headers);
-        final ResponseEntity<String> exchange = new RestTemplate()
-                .exchange(
-                        new URI("https://datsanta.dats.team/json/map/" + mapId + ".json"),
-                        HttpMethod.GET,
-                        entity,
-                        String.class
-                );
-        String mapJson = exchange.getBody();
-        Files.write(Paths.get("" + mapId + "_map.json"), mapJson.getBytes());
-
-
-        //loader.load("src/main/java/org/example/datsanta/faf7ef78-41b3-4a36-8423-688a61929c08.json");
-        loader.loadJson(mapJson);
-        final Map<Child, Set<Child>> nodes = loader.toNodes();
-
-        long startTime = System.currentTimeMillis();
-
-        final List<List<Gift>> lists1 = collectGiftsV3(loader.dsMap);
-//        crnt best 97 197 88 158 bags 46
-//        98, 199
-        //2  150 75
-//        final List<List<Gift>> lists = Collector.collectGiftsV3(loader.getDsMap(), 98, 199);
-
-        final ExecutorService executorService = Executors.newFixedThreadPool(20, tf);
-        AtomicInteger best = new AtomicInteger(100);
-        AtomicInteger bv = new AtomicInteger(0);
-        AtomicInteger bw = new AtomicInteger(0);
-        AtomicInteger bv2 = new AtomicInteger(0);
-        AtomicInteger bw2 = new AtomicInteger(0);
-        for (int v = 97; v <= 100; v++) {
-            for (int w = 197; w <= 200; w++) {
-                for (int v2 = 50; v2 < 100; v2++) {
-                    for (int w2 = 100; w2 < 200; w2++) {
-                        final AtomicInteger vA = new AtomicInteger(v);
-                        final AtomicInteger wA = new AtomicInteger(w);
-                        final AtomicInteger v2A = new AtomicInteger(v2);
-                        final AtomicInteger w2A = new AtomicInteger(w2);
-                        executorService.submit(() -> {
-                            try {
-
-                                if (w2A.get() % 50 == 0) {
-                                    System.out.println("crnt best %s %s %s %s bags %s".formatted(bv.get(), bw.get(), bv2.get(), bw2.get(), best.get()));
-                                }
-
-                                final List<List<Gift>> lists = Collector.collectGiftsV3(loader.getDsMap(), vA.get(), wA.get(), v2A.get(), w2A.get());
-                                System.out.printf("result %s, %s %s %s %s bags%n", vA.get(), wA.get(), v2A.get(), w2A.get(), lists.size());
-                                final int tmpBest = best.get();
-                                int tmpV = bv.get();
-                                int tmpW = bw.get();
-                                int tmpV2 = bv2.get();
-                                int tmpW2 = bw2.get();
-
-                                if (lists.size() < tmpBest) {
-                                    best.compareAndSet(tmpBest, lists.size());
-                                    bv.compareAndSet(tmpV, vA.get());
-                                    bw.compareAndSet(tmpW, wA.get());
-                                    bv2.compareAndSet(tmpV2, v2A.get());
-                                    bw2.compareAndSet(tmpW2, w2A.get());
-                                }
-                            } catch (Exception e) {
-                                System.out.println("result %s, %s %s %s error".formatted(vA.get(), wA.get(), v2A.get(), w2A.get()));
-                            }
-                        });
-
-                    }
-                }
-
-            }
-        }
-        System.out.println("best: " + best + " bv %s bw %s bv2 %s bw2 %s".formatted(bv, bw, bv2, bw2));
-//        final List<List<Gift>> bags = Collector.collectGiftsV3(loader.getDsMap());
-
-        System.out.println("");
-    }
+//    public static void main(String[] args) throws Exception {
+//        JsonLoader loader = new JsonLoader();
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.add("X-API-Key", apiKey);
+//        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+//        HttpEntity<String> entity = new HttpEntity<>(null, headers);
+//        final ResponseEntity<String> exchange = new RestTemplate()
+//                .exchange(
+//                        new URI("https://datsanta.dats.team/json/map/" + mapId + ".json"),
+//                        HttpMethod.GET,
+//                        entity,
+//                        String.class
+//                );
+//        String mapJson = exchange.getBody();
+//        Files.write(Paths.get("" + mapId + "_map.json"), mapJson.getBytes());
+//
+//
+//        //loader.load("src/main/java/org/example/datsanta/faf7ef78-41b3-4a36-8423-688a61929c08.json");
+//        loader.loadJson(mapJson);
+//        final Map<Child, Set<Child>> nodes = loader.toNodes();
+//
+//        long startTime = System.currentTimeMillis();
+//
+//        final List<List<Gift>> lists1 = collectGiftsV3(loader.dsMap);
+////        crnt best 97 197 88 158 bags 46
+////        98, 199
+//        //2  150 75
+////        final List<List<Gift>> lists = Collector.collectGiftsV3(loader.getDsMap(), 98, 199);
+//
+//        final ExecutorService executorService = Executors.newFixedThreadPool(20, tf);
+//        AtomicInteger best = new AtomicInteger(100);
+//        AtomicInteger bv = new AtomicInteger(0);
+//        AtomicInteger bw = new AtomicInteger(0);
+//        AtomicInteger bv2 = new AtomicInteger(0);
+//        AtomicInteger bw2 = new AtomicInteger(0);
+//        for (int v = 97; v <= 100; v++) {
+//            for (int w = 197; w <= 200; w++) {
+//                for (int v2 = 50; v2 < 100; v2++) {
+//                    for (int w2 = 100; w2 < 200; w2++) {
+//                        final AtomicInteger vA = new AtomicInteger(v);
+//                        final AtomicInteger wA = new AtomicInteger(w);
+//                        final AtomicInteger v2A = new AtomicInteger(v2);
+//                        final AtomicInteger w2A = new AtomicInteger(w2);
+//                        executorService.submit(() -> {
+//                            try {
+//
+//                                if (w2A.get() % 50 == 0) {
+//                                    System.out.println("crnt best %s %s %s %s bags %s".formatted(bv.get(), bw.get(), bv2.get(), bw2.get(), best.get()));
+//                                }
+//
+//                                final List<List<Gift>> lists = Collector.collectGiftsV3(loader.getDsMap(), vA.get(), wA.get(), v2A.get(), w2A.get());
+//                                System.out.printf("result %s, %s %s %s %s bags%n", vA.get(), wA.get(), v2A.get(), w2A.get(), lists.size());
+//                                final int tmpBest = best.get();
+//                                int tmpV = bv.get();
+//                                int tmpW = bw.get();
+//                                int tmpV2 = bv2.get();
+//                                int tmpW2 = bw2.get();
+//
+//                                if (lists.size() < tmpBest) {
+//                                    best.compareAndSet(tmpBest, lists.size());
+//                                    bv.compareAndSet(tmpV, vA.get());
+//                                    bw.compareAndSet(tmpW, wA.get());
+//                                    bv2.compareAndSet(tmpV2, v2A.get());
+//                                    bw2.compareAndSet(tmpW2, w2A.get());
+//                                }
+//                            } catch (Exception e) {
+//                                System.out.println("result %s, %s %s %s error".formatted(vA.get(), wA.get(), v2A.get(), w2A.get()));
+//                            }
+//                        });
+//
+//                    }
+//                }
+//
+//            }
+//        }
+//        System.out.println("best: " + best + " bv %s bw %s bv2 %s bw2 %s".formatted(bv, bw, bv2, bw2));
+////        final List<List<Gift>> bags = Collector.collectGiftsV3(loader.getDsMap());
+//
+//        System.out.println("");
+//    }
 
     public static List<List<Gift>> collectGifts(DsMap resp) {
 
@@ -260,20 +246,20 @@ public class Collector {
 
     //98 199 150 75 bags 47
     //97 197 89 164 bags 46
-    public static List<List<Gift>> collectGiftsV3(DsMap resp) {
+    public static List<List<Presenting>> collectGiftsV3(List<Presenting> resp) {
         return collectGiftsV3(resp, 97, 197, 89, 164);
     }
 
     @SneakyThrows
-    public static List<List<Gift>> collectGiftsV3(DsMap resp, int v, int w, int v2, int w2) {
+    public static List<List<Presenting>> collectGiftsV3(List<Presenting> resp, int v, int w, int v2, int w2) {
 
-        List<List<Gift>> result = new ArrayList<>();
+        List<List<Presenting>> result = new ArrayList<>();
 
-        final List<Gift> gifts = new ArrayList<>(resp.gifts());
-        gifts.sort(Comparator.comparing(Gift::volume).reversed().thenComparing(Comparator.comparing(Gift::weight).reversed()));
-        List<Gift> actualNow = new ArrayList<>(gifts);
+        final List<Presenting> gifts = new ArrayList<>(resp);
+        gifts.sort(Comparator.comparing(Presenting::getVolume).reversed().thenComparing(Comparator.comparing(Presenting::getWeight).reversed()));
+        List<Presenting> actualNow = new ArrayList<>(gifts);
 
-        List<Gift> currentGifts = new ArrayList<>();
+        List<Presenting> currentGifts = new ArrayList<>();
 
 
         int i = 0;
@@ -285,25 +271,25 @@ public class Collector {
             if (actualNow.size() == 0 || actualNow.size() == 1) {
 //                System.out.println();
             }
-            final Gift gift = actualNow.get(i);
+            final Presenting gift = actualNow.get(i);
 
 //            int curItemValue = gift.volume() * 10000 + gift.weight();
 
             int onBaseV = 0; //100
             int onBaseW = 0; //200
-            for (Gift currentGift : gifts) {
-                onBaseV += currentGift.volume();
-                onBaseW += currentGift.weight();
+            for (Presenting currentGift : gifts) {
+                onBaseV += currentGift.getVolume();
+                onBaseW += currentGift.getWeight();
             }
 
             int realV = 0; //100 7-2
             int realW = 0; //200 12-4
-            for (Gift currentGift : currentGifts) {
-                realV += currentGift.volume();
-                realW += currentGift.weight();
+            for (Presenting currentGift : currentGifts) {
+                realV += currentGift.getVolume();
+                realW += currentGift.getWeight();
             }
 
-            if (100 - realV >= gift.volume() && 200 - realW >= gift.weight()) {
+            if (100 - realV >= gift.getVolume() && 200 - realW >= gift.getWeight()) {
 //                curBag.addAndGet(curItemValue);
                 currentGifts.add(gift);
 
@@ -313,26 +299,18 @@ public class Collector {
 
                 realV = 0; //100
                 realW = 0; //200
-                for (Gift currentGift : currentGifts) {
-                    realV += currentGift.volume();
-                    realW += currentGift.weight();
+                for (Presenting currentGift : currentGifts) {
+                    realV += currentGift.getVolume();
+                    realW += currentGift.getWeight();
                 }
 //150 75
                 if ((realV >= v && realW >= w2) || (realW >= w && realV >= v2)) {
                     result.add(currentGifts);
 
-                    for (int j = 0; j < currentGifts.size() - 1; j++) {
-                        if (currentGifts.get(j).id() == 1) {
-                            final Gift gift1 = currentGifts.get(j);
-//                    System.out.println();
-                            break;
-                        }
-                    }
-
 //                    System.out.println("Bag is completed " + result.size());
                     actualNow = new ArrayList<>(gifts);
 
-                    final List<Gift> giftStream = actualNow.stream().filter(gift1 -> gift1.id() == 17).toList();
+                    //final List<Gift> giftStream = actualNow.stream().filter(gift1 -> gift1.id() == 17).toList();
 
                     currentGifts = new ArrayList<>();
                     continue;
@@ -346,26 +324,24 @@ public class Collector {
                 iter_count = 0;
                 onBaseV = 0; //100
                 onBaseW = 0; //200
-                for (Gift currentGift : gifts) {
-                    onBaseV += currentGift.volume();
-                    onBaseW += currentGift.weight();
+                for (Presenting currentGift : gifts) {
+                    onBaseV += currentGift.getVolume();
+                    onBaseW += currentGift.getWeight();
                 }
 
                 if (100 - realV < 7 && 200 - realW < 12) {
                     actualNow = removeLast(gifts, currentGifts);
                 } else if (100 - realV < 7) {
                     actualNow = removeLastV(gifts, currentGifts);
-                }else
-
-                if (200 - realW < 12) {
+                } else if (200 - realW < 12) {
                     actualNow = removeLastW(gifts, currentGifts);
                 }
 
                 realV = 0; //100
                 realW = 0; //200
-                for (Gift currentGift : currentGifts) {
-                    realV += currentGift.volume();
-                    realW += currentGift.weight();
+                for (Presenting currentGift : currentGifts) {
+                    realV += currentGift.getVolume();
+                    realW += currentGift.getWeight();
                 }
 
                 i = 0;
@@ -386,52 +362,56 @@ public class Collector {
 
 //        System.out.println("bags " + result.size() + ": " + result.stream().map(List::size).toList());
 //
-        final List<Gift> gifts1 = new ArrayList<>(result.stream().flatMap(e -> e.stream()).toList());
-        gifts1.sort(Comparator.comparingInt(Gift::id));
-        resp.gifts().sort(Comparator.comparingInt(Gift::id));
-        System.out.println(resp.gifts().equals(gifts1));
+
+//        final List<Presenting> gifts1 = new ArrayList<>(result.stream().flatMap(e -> e.stream()).toList());
+//        gifts1.sort(Comparator.comparingInt(Presenting::id));
+//        resp.gifts().sort(Comparator.comparingInt(Gift::id));
+//        System.out.println(resp.gifts().equals(gifts1));
+
 //        resp.gifts().removeAll(gifts1);
 //        System.out.println(resp.gifts());
+
+        // todo validate
 
         return result;
     }
 
-    private static List<Gift> removeLast(List<Gift> gifts, List<Gift> currentGifts) {
-        List<Gift> actualNow;
-        Gift giftForSkip = currentGifts.remove(currentGifts.size() - 1);
+    private static List<Presenting> removeLast(List<Presenting> gifts, List<Presenting> currentGifts) {
+        List<Presenting> actualNow;
+        Presenting giftForSkip = currentGifts.remove(currentGifts.size() - 1);
         gifts.add(giftForSkip);
 //        curBag.addAndGet(-1 * (giftForSkip.volume() * 10000 + giftForSkip.weight()));
-        actualNow = gifts.stream().filter(g -> g.volume() < giftForSkip.volume() && g.weight() < giftForSkip.weight())
-            .sorted(Comparator.comparing(Gift::volume).reversed().thenComparing(Comparator.comparing(Gift::weight).reversed()))
-            .collect(Collectors.toList());
+        actualNow = gifts.stream().filter(g -> g.getVolume() < giftForSkip.getVolume() && g.getWeight() < giftForSkip.getWeight())
+                .sorted(Comparator.comparing(Presenting::getVolume).reversed().thenComparing(Comparator.comparing(Presenting::getWeight).reversed()))
+                .collect(Collectors.toList());
         if (actualNow.isEmpty()) {
             actualNow = removeLast(gifts, currentGifts);
         }
         return actualNow;
     }
 
-    private static List<Gift> removeLastV(List<Gift> gifts, List<Gift> currentGifts) {
-        List<Gift> actualNow;
-        Gift giftForSkip = currentGifts.remove(currentGifts.size() - 1);
+    private static List<Presenting> removeLastV(List<Presenting> gifts, List<Presenting> currentGifts) {
+        List<Presenting> actualNow;
+        Presenting giftForSkip = currentGifts.remove(currentGifts.size() - 1);
         gifts.add(giftForSkip);
 //        curBag.addAndGet(-1 * (giftForSkip.volume() * 10000 + giftForSkip.weight()));
-        actualNow = gifts.stream().filter(g -> g.volume() < giftForSkip.volume())
-            .sorted(Comparator.comparing(Gift::volume).reversed().thenComparing(Comparator.comparing(Gift::weight).reversed()))
-            .collect(Collectors.toList());
+        actualNow = gifts.stream().filter(g -> g.getVolume() < giftForSkip.getVolume())
+                .sorted(Comparator.comparing(Presenting::getVolume).reversed().thenComparing(Comparator.comparing(Presenting::getWeight).reversed()))
+                .collect(Collectors.toList());
         if (actualNow.isEmpty()) {
             actualNow = removeLastV(gifts, currentGifts);
         }
         return actualNow;
     }
 
-    private static List<Gift> removeLastW(List<Gift> gifts, List<Gift> currentGifts) {
-        List<Gift> actualNow;
-        Gift giftForSkip = currentGifts.remove(currentGifts.size() - 1);
+    private static List<Presenting> removeLastW(List<Presenting> gifts, List<Presenting> currentGifts) {
+        List<Presenting> actualNow;
+        Presenting giftForSkip = currentGifts.remove(currentGifts.size() - 1);
         gifts.add(giftForSkip);
 //        curBag.addAndGet(-1 * (giftForSkip.volume() * 10000 + giftForSkip.weight()));
-        actualNow = gifts.stream().filter(g -> g.weight() < giftForSkip.weight())
-            .sorted(Comparator.comparing(Gift::volume).reversed().thenComparing(Comparator.comparing(Gift::weight).reversed()))
-            .collect(Collectors.toList());
+        actualNow = gifts.stream().filter(g -> g.getWeight() < giftForSkip.getWeight())
+                .sorted(Comparator.comparing(Presenting::getVolume).reversed().thenComparing(Comparator.comparing(Presenting::getWeight).reversed()))
+                .collect(Collectors.toList());
         if (actualNow.isEmpty()) {
             actualNow = removeLastW(gifts, currentGifts);
         }

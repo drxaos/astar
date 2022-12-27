@@ -1,13 +1,27 @@
 package org.example.datsanta;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.example.datsanta.part2.Gender;
 
 import java.util.Map;
 
 public record Child(
         int x,
-        int y
+        int y,
+        Gender gender,
+        int age
 ) implements Comparable<Child> {
+    public Child(int x, int y, Gender gender, int age) {
+        this.x = x;
+        this.y = y;
+        this.gender = gender;
+        this.age = age;
+    }
+
+    public Child(int x, int y) {
+        this(x, y, null, 0);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

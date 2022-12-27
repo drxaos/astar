@@ -2,6 +2,9 @@ package org.example.datsanta;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.astar.AStarFinder;
+import org.example.datsanta.part2.ChildType;
+import org.example.datsanta.part2.Presenting;
+import org.example.datsanta.part3.GiftType3;
 import org.example.search.Graph;
 import org.example.search.Scorer;
 import org.springframework.http.HttpEntity;
@@ -22,6 +25,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.example.datsanta.part2.Gender.female;
+import static org.example.datsanta.part2.Gender.male;
+
 public class DsTest {
     public static ThreadFactory tf = new ThreadFactory() {
 
@@ -34,7 +40,7 @@ public class DsTest {
     };
 
     static String apiKey = "90a75999-2d77-41d9-aa22-26a85571da53";
-    static String mapId = "faf7ef78-41b3-4a36-8423-688a61929c08";
+    static String mapId = "dd6ed651-8ed6-4aeb-bcbc-d8a51c8383cc";
     static JsonLoader loader = new JsonLoader();
     static Child zero = new Child(0, 0);
     static AStarFinder<Child> finder;
@@ -51,6 +57,8 @@ public class DsTest {
     static AtomicInteger activeBestPath = new AtomicInteger(0);
     static AtomicInteger activeGenetic = new AtomicInteger(0);
     static Map<Child, Set<Child>> nodes;
+    static int sum = 0;
+    static int happy = 0;
 
     public static void main(String[] args) throws Exception {
 //        MapGenerator generator = new MapGenerator();
@@ -58,31 +66,58 @@ public class DsTest {
 
         Input.run();
 
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.add("X-API-Key", apiKey);
-//        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
-//        HttpEntity<String> entity = new HttpEntity<>(null, headers);
-//        final ResponseEntity<String> exchange = new RestTemplate()
-//                .exchange(
-//                        new URI("https://datsanta.dats.team/json/map/" + mapId + ".json"),
-//                        HttpMethod.GET,
-//                        entity,
-//                        String.class
-//                );
-//        String mapJson = exchange.getBody();
-//        Files.write(Paths.get("" + mapId + "_map.json"), mapJson.getBytes());
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-API-Key", apiKey);
+        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+        HttpEntity<String> entity = new HttpEntity<>(null, headers);
+        final ResponseEntity<String> exchange = new RestTemplate()
+                .exchange(
+                        new URI("https://datsanta.dats.team/json/map/" + mapId + ".json"),
+                        HttpMethod.GET,
+                        entity,
+                        String.class
+                );
+        String mapJson = exchange.getBody();
+        Files.write(Paths.get("" + mapId + "_map.json"), mapJson.getBytes());
 
 
-        loader.load("src/main/java/org/example/datsanta/faf7ef78-41b3-4a36-8423-688a61929c08.json");
-        //loader.loadJson(mapJson);
+        //loader.load("src/main/java/org/example/datsanta/faf7ef78-41b3-4a36-8423-688a61929c08.json");
+        loader.loadJson(mapJson);
         nodes = loader.toNodes();
 
         long startTime = System.currentTimeMillis();
 
-        final List<List<Gift>> bags = Collector.collectGiftsV3(loader.getDsMap());
+
+        Map<ChildType, Map<GiftType3, Double>> best = new HashMap<>();
+        best.put(new ChildType(male, 0), Map.of());
+        best.put(new ChildType(male, 1), Map.of());
+        best.put(new ChildType(male, 2), Map.of());
+        best.put(new ChildType(male, 3), Map.of());
+        best.put(new ChildType(male, 4), Map.of());
+        best.put(new ChildType(male, 5), Map.of());
+        best.put(new ChildType(male, 6), Map.of());
+        best.put(new ChildType(male, 7), Map.of());
+        best.put(new ChildType(male, 8), Map.of());
+        best.put(new ChildType(male, 9), Map.of());
+        best.put(new ChildType(male, 10), Map.of());
+        best.put(new ChildType(female, 0), Map.of());
+        best.put(new ChildType(female, 1), Map.of());
+        best.put(new ChildType(female, 2), Map.of());
+        best.put(new ChildType(female, 3), Map.of());
+        best.put(new ChildType(female, 4), Map.of());
+        best.put(new ChildType(female, 5), Map.of());
+        best.put(new ChildType(female, 6), Map.of());
+        best.put(new ChildType(female, 7), Map.of());
+        best.put(new ChildType(female, 8), Map.of());
+        best.put(new ChildType(female, 9), Map.of());
+        best.put(new ChildType(female, 10), Map.of());
+
+        List<Presenting> presentings = getPresentings(loader.dsMap, best);
+
+        final List<List<Presenting>> bags = Collector.collectGiftsV3(presentings);
         bags.sort(Comparator.comparing(List::size, Comparator.reverseOrder()));
 
-        List<List<Integer>> resultBags = bags.stream().map(l -> l.stream().map(Gift::id).toList()).toList();
+        List<List<Integer>> resultBags = bags.stream().map(l -> l.stream().map(Presenting::getGiftID).toList()).toList();
         System.out.println("bags " + resultBags.size() + ": " + resultBags.stream().map(List::size).toList());
 
         long bagsTime = System.currentTimeMillis();
@@ -132,8 +167,8 @@ public class DsTest {
 //        };
 
 
-//        final ForkJoinPool forkJoinPool1 = new ForkJoinPool(12);
-//        final ForkJoinTask<?> task1 = forkJoinPool1.submit(() -> {
+        final ForkJoinPool forkJoinPool1 = new ForkJoinPool(12);
+        final ForkJoinTask<?> task1 = forkJoinPool1.submit(() -> {
         final ArrayList<Child> processingPoints = new ArrayList<>(loader.dsMap.children());
         while (!processingPoints.isEmpty()) {
             int targetSize = bags.get(0).size();
@@ -221,7 +256,7 @@ public class DsTest {
         clusters.clear();
         clustersQueue.forEach(c -> clusters.put(c.getKey(), new ArrayList<>(c.getValue())));
         System.out.println("clusters fixed");
-//        });
+        }); // FORKJOIN
 
         long kmeanTime = System.currentTimeMillis();
         System.out.println("kmeanTime: " + (kmeanTime - bagsTime));
@@ -287,7 +322,7 @@ public class DsTest {
         var geneticScorer = circleLineScorer;
 
         List<Future<List<Child>>> tasks = new ArrayList<>();
-        if (true) {
+        if (false) {
             AtomicInteger clusterIndex = new AtomicInteger();
 
             List<Callable<List<Child>>> runnables = new ArrayList<>();
@@ -981,4 +1016,69 @@ public class DsTest {
                 (b.y() - center.y()) * (b.y() - center.y());
         return d1 > d2;
     }
+
+
+    private static List<Presenting> getPresentings(DsMap step2Map, Map<ChildType, Map<GiftType3, Double>> best) {
+        int max = 100000;
+        final List<Child> unmodifiedChild = new ArrayList<>(step2Map.children());
+        final List<Gift> unmodifiedGifts = new ArrayList<>(step2Map.gifts());
+
+        final List<Gift> gifts = step2Map.gifts();
+        final List<Child> children = new ArrayList<>(step2Map.children());
+        final List<Presenting> result = new ArrayList<>();
+
+        while (!children.isEmpty()) {
+            final Child e = children.remove(0);
+            final ChildType childType = new ChildType(e.gender(), e.age());
+            final List<Map.Entry<GiftType3, Double>> entries = best.get(childType)
+                    .entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByValue())
+                    .toList();
+
+            final Gift gift = getMaxHappyGiftWithEntries(gifts, entries);
+            gifts.remove(gift);
+
+            if (sum + gift.price() > 100000) {
+                final Presenting presenting = result.stream()
+                        .max(Comparator.comparingInt(Presenting::getPrice))
+                        .get();
+                result.remove(presenting);
+                sum = sum - unmodifiedGifts.stream().filter(w -> w.id() == presenting.getGiftID()).findFirst().get().price();
+                happy = happy - (int) (presenting.getPrice() * best.getOrDefault(childType, Map.of()).getOrDefault(presenting.getGiftType(), 0.0));
+                children.add(
+                        unmodifiedChild.stream()
+                                .filter(w -> w.x() == presenting.getX() && w.y() == presenting.getY())
+                                .findFirst()
+                                .get()
+                );
+            }
+
+            final Presenting presenting = new Presenting(gift.id(), e.x(), e.y(), gift.price(), gift.type(), new ChildType(e.gender(), e.age()), gift.volume(), gift.weight());
+            result.add(presenting);
+            sum = sum + gift.price();
+            happy = happy + (int) (gift.price() * best.getOrDefault(childType, Map.of()).getOrDefault(gift.type(), 0.0));
+        }
+        return result;
+    }
+
+    private static Gift getMaxHappyGiftWithEntries(final List<Gift> gifts, final List<Map.Entry<GiftType3, Double>> giftTypes) {
+        final Gift gift2 = gifts.stream()
+                .filter(e -> giftTypes.stream().map(Map.Entry::getKey).toList().contains(e.type()))
+                .max(
+                        Comparator.comparing((Gift e) -> giftTypes.stream()
+                                .filter(r -> r.getKey() == e.type())
+                                .findFirst()
+                                .map(Map.Entry::getValue)
+                                .get() * e.price()
+                        ))
+                .orElseGet(() -> {
+                    return gifts.stream()
+                            .max(
+                                    Comparator.comparing((Gift e) -> e.price())).get();
+                });
+
+        return gift2;
+    }
+
 }

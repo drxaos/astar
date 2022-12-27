@@ -155,7 +155,8 @@ public class GeneticSearch {
     public GeneticGenome optimize() {
         List<GeneticGenome> population = initialPopulation();
         GeneticGenome globalBestGenome = population.get(0);
-        for (int i = 0; i < maxIterations; i++) {
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < maxIterations && System.currentTimeMillis() - start < 60000; i++) {
             List<GeneticGenome> selected = selection(population);
             population = createGeneration(selected);
             globalBestGenome = Collections.min(population);
