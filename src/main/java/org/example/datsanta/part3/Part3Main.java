@@ -63,7 +63,7 @@ public class Part3Main {
             demo.crossover();
 
             //Do mutation under a random probability
-            if (generateRandomInt(0, 100) % 7 < 5) {
+            if (generateRandomInt(0, Integer.MAX_VALUE - 1) % 7 < 5) {
                 demo.mutation();
             }
 
