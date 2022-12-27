@@ -83,9 +83,11 @@ public class Part3Main {
         int totalV = 0;
         int totalW = 0;
         int totalFulled = 0;
+        int totalCost = 0;
         for (Map.Entry<Child, Item> entry : genes.entrySet()) {
             totalV += entry.getValue().getVolume();
             totalW += entry.getValue().getWeight();
+            totalCost += entry.getValue().getCost();
             if (entry.getValue().getId() >= 0) {
                 totalFulled++;
             }
@@ -94,6 +96,7 @@ public class Part3Main {
         System.out.println("total v: [%s] total w: [%s]".formatted(totalV, totalW));
         System.out.println("total fulled [%s]".formatted(totalFulled));
         System.out.println("kill all count: [%s]".formatted(demo.killAllCount));
+        System.out.println("total cost: [%s]".formatted(totalCost));
         System.out.println("");
 
     }
