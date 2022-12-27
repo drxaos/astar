@@ -14,7 +14,7 @@ public class CollectorGA {
     }
 
     public static final class Collider {
-        static Population population = new Population();
+        Population population = new Population();
         Individual fittest;
         Individual secondFittest;
         int generationCount = 0;
@@ -55,9 +55,6 @@ public class CollectorGA {
                 final Part3Main.Item temp = getValueFromMapById(fittest.genes, i);
                 setValueFromMapById(fittest.genes, getValueFromMapById(secondFittest.genes, i), i);
                 setValueFromMapById(secondFittest.genes, temp, i);
-
-                fittest.calcFitness();
-                secondFittest.calcFitness();
             }
 
         }
@@ -128,7 +125,7 @@ public class CollectorGA {
 
     public static final class Individual {
 
-        public int fitness = 0;
+        public int fitness;
         public LinkedHashMap<Part3Main.Child, Part3Main.Item> genes = new LinkedHashMap<>();
         public int geneLength = 40;
 
@@ -153,6 +150,7 @@ public class CollectorGA {
 
             int totalV = 0;
             int totalW = 0;
+            int bagFully = 0;
             int totalCost = 0;
 
             //Сейчас учитываются только размеры, вес и цена предмета
@@ -162,22 +160,32 @@ public class CollectorGA {
                 totalV += item.getVolume();
                 totalW += item.getWeight();
                 totalCost += item.getCost();
+                if (item.getId() >= 0) {
+                    bagFully++;
+                }
             }
 
             double totalVPercent = totalV / (double) 100 * 100;
             double totalWPercent = totalW / (double) 200 * 100;
+            double bagFullyPercent = bagFully / (double) 40 * 100;
 
             if (totalVPercent <= 100) {
                 fitness = (int) totalVPercent;
             } else {
-                fitness--;
+                fitness = fitness - 50;
             }
 
             if (totalWPercent <= 100) {
                 fitness += (int) totalWPercent;
             } else {
-                fitness--;
+                fitness = fitness - 50;
             }
+            if (bagFullyPercent <= 100) {
+                fitness += (int) bagFullyPercent;
+            } else {
+                fitness=fitness - 50;
+            }
+//            System.out.println(fitness);
         }
 
     }
@@ -245,6 +253,5 @@ public class CollectorGA {
             }
             getFittest();
         }
-
     }
 }

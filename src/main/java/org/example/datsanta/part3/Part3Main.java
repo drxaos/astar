@@ -53,7 +53,7 @@ public class Part3Main {
         System.out.println("Generation: " + demo.generationCount + " Fittest: " + population.fittest);
 
         //While population gets an individual with maximum fitness
-        while (demo.population.fittest < 200) {
+        while (demo.population.fittest < 265) {
             ++demo.generationCount;
 
             //Do selection
@@ -63,7 +63,7 @@ public class Part3Main {
             demo.crossover();
 
             //Do mutation under a random probability
-            if (generateRandomInt(0, 100) % 7 < 5) {
+            if (generateRandomInt(0, Integer.MAX_VALUE - 1) % 7 < 5) {
                 demo.mutation();
             }
 
@@ -82,12 +82,17 @@ public class Part3Main {
         final LinkedHashMap<Child, Item> genes = demo.population.getFittest().genes;
         int totalV = 0;
         int totalW = 0;
+        int totalFulled = 0;
         for (Map.Entry<Child, Item> entry : genes.entrySet()) {
             totalV += entry.getValue().getVolume();
             totalW += entry.getValue().getWeight();
+            if (entry.getValue().getId() >= 0) {
+                totalFulled++;
+            }
         }
 
         System.out.println("total v: [%s] total w: [%s]".formatted(totalV, totalW));
+        System.out.println("total fulled [%s]".formatted(totalFulled));
         System.out.println("kill all count: [%s]".formatted(demo.killAllCount));
         System.out.println("");
 
