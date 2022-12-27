@@ -4,32 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.example.datsanta.part2.Gender.female;
 import static org.example.datsanta.part2.Gender.male;
-import static org.example.datsanta.part2.GiftType.board_games;
-import static org.example.datsanta.part2.GiftType.books;
-import static org.example.datsanta.part2.GiftType.clothes;
-import static org.example.datsanta.part2.GiftType.computer_games;
-import static org.example.datsanta.part2.GiftType.constructors;
-import static org.example.datsanta.part2.GiftType.dolls;
-import static org.example.datsanta.part2.GiftType.outdoor_games;
-import static org.example.datsanta.part2.GiftType.pet;
-import static org.example.datsanta.part2.GiftType.playground;
-import static org.example.datsanta.part2.GiftType.radio_controlled_toys;
-import static org.example.datsanta.part2.GiftType.soft_toys;
-import static org.example.datsanta.part2.GiftType.sweets;
-import static org.example.datsanta.part2.GiftType.toy_vehicles;
+import static org.example.datsanta.part2.GiftType.*;
 
 public class CompactMain {
     static int sum = 0;
+    static int happy = 0;
+    static String mapId = "a8e01288-28f8-45ee-9db4-f74fc4ff02c8";
 
 
     @SneakyThrows
@@ -103,7 +88,7 @@ public class CompactMain {
                 );
             }
 
-            final Presenting presenting = new Presenting(gift.getId(), e.getId(), gift.getPrice());
+            final Presenting presenting = new Presenting(gift.getId(), e.getId(), gift.getPrice(), gift.type, new ChildType(e.getGender(), e.getAge()));
             result.add(presenting);
             sum = sum + gift.getPrice();
         }
@@ -132,28 +117,29 @@ public class CompactMain {
         }).toList();
 
         Map<ChildType, Map<GiftType, Double>> best = new HashMap<>();
-        best.put(new ChildType(male, 0), Map.of(toy_vehicles, 0.130));
-        best.put(new ChildType(male, 1), Map.of(sweets, 0.441));
-        best.put(new ChildType(male, 2), Map.of(radio_controlled_toys, 0.408));
-        best.put(new ChildType(male, 3), Map.of(sweets, 0.578));
-        best.put(new ChildType(male, 4), Map.of(computer_games, 0.602));
-        best.put(new ChildType(male, 5), Map.of(computer_games, 0.798));
-        best.put(new ChildType(male, 6), Map.of(computer_games, 0.803));
-        best.put(new ChildType(male, 7), Map.of(computer_games, 0.8));
-        best.put(new ChildType(male, 8), Map.of(computer_games, 0.804));
-        best.put(new ChildType(male, 9), Map.of(computer_games, 0.803));
-        best.put(new ChildType(male, 10), Map.of(computer_games, 0.813));
-        best.put(new ChildType(female, 0), Map.of(playground, 0.065));
-        best.put(new ChildType(female, 1), Map.of(sweets, 0.434));
-        best.put(new ChildType(female, 2), Map.of(sweets, 0.439));
-        best.put(new ChildType(female, 3), Map.of(outdoor_games, 0.453));
-        best.put(new ChildType(female, 4), Map.of(outdoor_games, 0.463));
-        best.put(new ChildType(female, 5), Map.of(sweets, 0.571));
-        best.put(new ChildType(female, 6), Map.of(dolls, 0.531));
-        best.put(new ChildType(female, 7), Map.of(dolls, 0.531));
-        best.put(new ChildType(female, 8), Map.of(books, 0.454));
-        best.put(new ChildType(female, 9), Map.of(books, 0.45));
-        best.put(new ChildType(female, 10), Map.of(pet, 0.246));
+        best.put(new ChildType(male, 0), Map.of(toy_vehicles, 0.130, playground, 0.063, outdoor_games, 0.054));
+        best.put(new ChildType(male, 1), Map.of(sweets, 0.441, toy_vehicles, 0.4, playground, 0.185));
+        best.put(new ChildType(male, 2), Map.of(radio_controlled_toys, 0.408, sweets, 0.4, playground, 0.2));
+        best.put(new ChildType(male, 3), Map.of(sweets, 0.578, toy_vehicles, 0.4, playground, 0.253));
+        best.put(new ChildType(male, 4), Map.of(computer_games, 0.602, toy_vehicles, 0.403, sweets, 0.5));
+        best.put(new ChildType(male, 5), Map.of(computer_games, 0.798, sweets, 0.566, toy_vehicles, 0.530, outdoor_games, 0.445));
+        best.put(new ChildType(male, 6), Map.of(computer_games, 0.803, sweets, 0.571, outdoor_games, 0.451, constructors, 0.211));
+        best.put(new ChildType(male, 7), Map.of(computer_games, 0.8, board_games, 0.311, constructors, 0.210, books, 0.333));
+        best.put(new ChildType(male, 8), Map.of(computer_games, 0.804, board_games, 0.424, radio_controlled_toys, 0.223, outdoor_games, 0.215));
+        best.put(new ChildType(male, 9), Map.of(computer_games, 0.803, board_games, 0.421, outdoor_games, 0.228));
+        best.put(new ChildType(male, 10), Map.of(computer_games, 0.813, board_games, 0.424, outdoor_games, 0.227, radio_controlled_toys, 0.226));
+
+        best.put(new ChildType(female, 0), Map.of(playground, 0.065, soft_toys, 0.054));
+        best.put(new ChildType(female, 1), Map.of(sweets, 0.434, playground, 0.185));
+        best.put(new ChildType(female, 2), Map.of(sweets, 0.439, playground, 0.188));
+        best.put(new ChildType(female, 3), Map.of(outdoor_games, 0.453, sweets, 0.432, dolls, 0.403));
+        best.put(new ChildType(female, 4), Map.of(outdoor_games, 0.463, sweets, 0.434, dolls, 0.4));
+        best.put(new ChildType(female, 5), Map.of(sweets, 0.571, computer_games, 0.412, books, 0.453));
+        best.put(new ChildType(female, 6), Map.of(dolls, 0.531, sweets, 0.568, books, 0.441));
+        best.put(new ChildType(female, 7), Map.of(sweets, 0.562, dolls, 0.531, books, 0.445, constructors, 0.397));
+        best.put(new ChildType(female, 8), Map.of(books, 0.454, computer_games, 0.402, board_games, 0.421));
+        best.put(new ChildType(female, 9), Map.of(books, 0.45, board_games, 0.44, pet, 0.249));
+        best.put(new ChildType(female, 10), Map.of(pet, 0.246, books, 0.435, board_games, 0.422));
 
 
         int max = 100000;
@@ -198,13 +184,14 @@ public class CompactMain {
                 isFirstFull = true;
             }
 
-            final Presenting presenting = new Presenting(gift.getId(), child2.getId(), gift.getPrice());
+            final Presenting presenting = new Presenting(gift.getId(), child2.getId(), gift.getPrice(), gift.type, new ChildType(child2.getGender(), child2.age));
             if (isFirstFull) {
                 result2.add(presenting);
             } else {
                 result1.add(presenting);
             }
             sum = sum + gift.getPrice();
+            happy = happy + (int) (gift.getPrice() * best.get(childType).get(gift.type));
         }
 
         final List<Presenting> result = new ArrayList<>();
@@ -215,7 +202,13 @@ public class CompactMain {
                 .mapToInt(Presenting::getPrice)
                 .sum();
 
-        System.out.println(sum123);
+        System.out.println("sum " + sum123);
+        System.out.println("happy " + happy);
+
+        Part2Result part2Result = new Part2Result(mapId, result);
+        String json = (new ObjectMapper().writeValueAsString(part2Result));
+        System.out.println(json);
+
     }
 
     private static Gift2 getMaxPriceGift(final List<Gift2> gifts, final List<GiftType> giftTypes) {
@@ -244,15 +237,7 @@ public class CompactMain {
     private static Gift2 getMinPriceGift(final List<Gift2> gifts, List<Map.Entry<GiftType, Double>> giftTypes) {
         final Gift2 gift2 = gifts.stream()
                 .filter(e -> giftTypes.stream().map(Map.Entry::getKey).toList().contains(e.getType()))
-                .sorted(
-                        Comparator.comparing(e -> giftTypes.stream()
-                                .filter(r -> r.getKey() == e.getType())
-                                .findFirst()
-                                .map(Map.Entry::getValue)
-                                .get()
-                        )
-                )
-                .findFirst()
+                .min(Comparator.comparing(Gift2::getPrice))
                 .get();
 
         return gift2;
