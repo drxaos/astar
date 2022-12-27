@@ -65,24 +65,24 @@ public class DsTest {
 //        loader.load(generator.generate());
 
         Input.run();
+//
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.add("X-API-Key", apiKey);
+//        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+//        HttpEntity<String> entity = new HttpEntity<>(null, headers);
+//        final ResponseEntity<String> exchange = new RestTemplate()
+//                .exchange(
+//                        new URI("https://datsanta.dats.team/json/map/" + mapId + ".json"),
+//                        HttpMethod.GET,
+//                        entity,
+//                        String.class
+//                );
+//        String mapJson = exchange.getBody();
+//        Files.write(Paths.get("" + mapId + "_map.json"), mapJson.getBytes());
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("X-API-Key", apiKey);
-        headers.add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
-        HttpEntity<String> entity = new HttpEntity<>(null, headers);
-        final ResponseEntity<String> exchange = new RestTemplate()
-                .exchange(
-                        new URI("https://datsanta.dats.team/json/map/" + mapId + ".json"),
-                        HttpMethod.GET,
-                        entity,
-                        String.class
-                );
-        String mapJson = exchange.getBody();
-        Files.write(Paths.get("" + mapId + "_map.json"), mapJson.getBytes());
 
-
-        //loader.load("src/main/java/org/example/datsanta/faf7ef78-41b3-4a36-8423-688a61929c08.json");
-        loader.loadJson(mapJson);
+        loader.load("dd6ed651-8ed6-4aeb-bcbc-d8a51c8383cc_map.json");
+//        loader.loadJson(mapJson);
         nodes = loader.toNodes();
 
         long startTime = System.currentTimeMillis();
