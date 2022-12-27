@@ -357,7 +357,7 @@ public class DsTest {
                                     );
                                     System.out.println("done recalc " + clIndex);
                                     synchronized (resultParts) {
-                                        saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                                        saveResult(false, mapId, startTime, bags, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
                                     }
                                 } catch (InterruptedException | ExecutionException e) {
                                     e.printStackTrace();
@@ -397,7 +397,7 @@ public class DsTest {
             });
 
             synchronized (resultParts) {
-                saveResult(true, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                saveResult(true, mapId, startTime, bags, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
             }
         });
 
@@ -422,7 +422,7 @@ public class DsTest {
                                     );
                                     System.out.println("done " + c.getClIndex());
                                     synchronized (resultParts) {
-                                        saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                                        saveResult(false, mapId, startTime, bags, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
                                     }
                                 } catch (InterruptedException | ExecutionException e) {
                                     e.printStackTrace();
@@ -453,7 +453,7 @@ public class DsTest {
                                 );
                                 System.out.println("done " + c.getClIndex());
                                 synchronized (resultParts) {
-                                    saveResult(false, mapId, startTime, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
+                                    saveResult(false, mapId, startTime, bags, resultBags, childScorer, circleLineScorer, kmeanTime, resultPath, resultParts);
                                 }
                             } catch (InterruptedException | ExecutionException e) {
                                 e.printStackTrace();
@@ -608,6 +608,7 @@ public class DsTest {
     private static void saveResult(boolean first,
                                    String mapId,
                                    long startTime,
+                                   List<List<Presenting>> bags,
                                    List<List<Integer>> resultBags,
                                    ChildScorer childScorer,
                                    CircleLineScorer circleLineScorer,
@@ -1048,7 +1049,7 @@ public class DsTest {
             final Gift gift = getMaxHappyGiftWithEntries(gifts, entries);
             gifts.remove(gift);
 
-            if (sum + gift.price() > 100000) {
+            if (sum + gift.price() > 50000) {
                 final Presenting presenting = result.stream()
                         .max(Comparator.comparingInt(Presenting::getPrice))
                         .get();
@@ -1073,19 +1074,7 @@ public class DsTest {
 
     private static Gift getMaxHappyGiftWithEntries(final List<Gift> gifts, final List<Map.Entry<GiftType3, Double>> giftTypes) {
         final Gift gift2 = gifts.stream()
-                .filter(e -> giftTypes.stream().map(Map.Entry::getKey).toList().contains(e.type()))
-                .max(
-                        Comparator.comparing((Gift e) -> giftTypes.stream()
-                                .filter(r -> r.getKey() == e.type())
-                                .findFirst()
-                                .map(Map.Entry::getValue)
-                                .get() * e.price()
-                        ))
-                .orElseGet(() -> {
-                    return gifts.stream()
-                            .max(
-                                    Comparator.comparing((Gift e) -> e.price())).get();
-                });
+                .min(Comparator.comparing((Gift e) -> (e.weight() + e.volume() * 2) / e.price())).get();
 
         return gift2;
     }
